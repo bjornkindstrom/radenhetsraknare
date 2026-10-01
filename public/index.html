@@ -25,6 +25,8 @@
     --danger: #e11d48;
     --danger-soft: #fff1f2;
     --danger-border: #fecdd3;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
     --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 2px 12px rgba(15, 23, 42, .05);
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     color-scheme: light;
@@ -33,14 +35,14 @@
     :root:not([data-theme="light"]) {
       --bg: #0b1120; --surface: #111a2e; --surface-2: #17223a; --text: #e8edf6; --muted: #94a3b8;
       --faint: #64748b; --border: #1f2b44; --accent: #3b82f6; --accent-2: #60a5fa; --accent-soft: #172a52;
-      --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e;
+      --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e; --warn: #fbbf24; --warn-soft: #2e2208;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25); color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #0b1120; --surface: #111a2e; --surface-2: #17223a; --text: #e8edf6; --muted: #94a3b8;
     --faint: #64748b; --border: #1f2b44; --accent: #3b82f6; --accent-2: #60a5fa; --accent-soft: #172a52;
-    --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e;
+    --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e; --warn: #fbbf24; --warn-soft: #2e2208;
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25); color-scheme: dark;
   }
 
@@ -198,12 +200,56 @@
   .confirm-inner h3 { margin: 0 0 6px; }
   .confirm-inner p { margin: 0 0 18px; color: var(--muted); }
   .confirm-inner form { display: flex; justify-content: flex-end; gap: 8px; }
+  .confirm-inner #codeForm { display: block; }
+  .dialog-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .code-msg { color: var(--danger); font-size: .88rem; min-height: 1.2em; }
 
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); background: var(--text); color: var(--surface);
     padding: 11px 18px; border-radius: 12px; font-weight: 600; font-size: .9rem; opacity: 0; pointer-events: none;
     transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 10px 30px rgba(0,0,0,.2); }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
   .toast.err { background: var(--danger); color: #fff; }
+
+  /* ---------- Start / körning ---------- */
+  [hidden] { display: none !important; }
+  .start-form { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+  .step-label { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; margin-top: 12px; justify-content: center; }
+  .step-label span { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: .85rem; }
+  .seq-input { height: 64px; border-radius: 14px; border: 2px solid var(--border); background: var(--surface-2); text-align: center;
+    font-family: var(--mono); font-size: 1.6rem; font-weight: 700; letter-spacing: .04em; width: 100%; }
+  .seq-input::placeholder { font-family: Inter, sans-serif; font-size: 1.05rem; font-weight: 500; letter-spacing: 0; color: var(--faint); }
+  .seq-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .start-btn { margin-top: 8px; height: 72px; flex-direction: row !important; gap: 12px; }
+  .start-btn svg { width: 22px; height: 22px; }
+  .run-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .run-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .machine-tag { font-family: var(--mono); font-weight: 800; font-size: 1.05rem; background: var(--accent); color: #fff; border-radius: 9px; padding: 4px 12px; }
+  .seq-tag, .since { font-size: .88rem; color: var(--muted); }
+  .seq-tag b, .since b { font-family: var(--mono); color: var(--text); }
+  .end-btn { height: 38px; display: inline-flex; align-items: center; gap: 8px; font-size: .88rem; }
+  .end-btn svg { width: 12px; height: 12px; color: var(--danger); }
+  .label.center { text-align: center; margin-top: 18px; }
+  .counter .big { margin-top: 6px; }
+  .break-note { text-align: center; margin: -6px auto 16px; width: fit-content; font-size: .85rem; font-weight: 600; color: var(--warn);
+    background: var(--warn-soft); border-radius: 999px; padding: 4px 14px; }
+  .badge.break { background: var(--warn-soft); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+  .stat .sub { font-size: .78rem; color: var(--faint); margin-top: 4px; }
+  .stat.highlight .val { color: var(--accent); }
+  #runs table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .9rem; }
+  #runs th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 700; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  #runs td { padding: 10px 8px; border-bottom: 1px dashed var(--border); }
+  #runs tr:last-child td { border-bottom: 0; }
+  #runs .num { text-align: right; }
+  #runs .mono { font-family: var(--mono); }
+  #runs tr.active td { background: var(--accent-soft); }
+  #runs tr.active td:first-child { border-radius: 8px 0 0 8px; }
+  #runs tr.active td:last-child { border-radius: 0 8px 8px 0; }
+  #runs .when { color: var(--muted); white-space: nowrap; font-family: var(--mono); font-size: .82rem; }
+  .live { color: var(--accent); font-weight: 700; }
+  .log .m small { display: block; font-weight: 500; color: var(--faint); font-size: .75rem; }
+  .field.times { align-items: center; }
+  .field.times input { flex: 1; }
+  .field.times span { color: var(--faint); }
 
   /* ---------- Responsivt ---------- */
   @media (max-width: 1000px) {
@@ -227,6 +273,9 @@
     .act { height: 64px; font-size: 1.1rem; }
     .act.main { font-size: 1.15rem; }
     .hint { display: none; }
+    #runs table { font-size: .82rem; }
+    #runs th, #runs td { padding: 8px 4px; }
+    #runs .when { display: none; }
   }
 </style>
 </head>
@@ -255,25 +304,48 @@
 
   <div class="layout">
     <main>
-      <section class="card counter">
+      <section class="card counter start" id="startCard">
         <div class="row-between">
-          <span class="label">Färdigställda radenheter</span>
+          <span class="label">Starta körning</span>
           <span class="clock" id="clock">--:--:--</span>
         </div>
-        <div class="inner">
-          <div class="picker">
-            <div class="seg" id="types"></div>
-            <div class="seg sizes" id="sizes"></div>
+        <form class="inner start-form" id="startForm" autocomplete="off">
+          <div class="step-label"><span>1</span> Vilken maskin kör du på?</div>
+          <div class="seg" id="types"></div>
+          <div class="seg sizes" id="sizes"></div>
+          <div class="step-label"><span>2</span> Sekvensnummer</div>
+          <input class="seq-input" id="seq" placeholder="Skriv in sekvensnummer" maxlength="40" enterkeyhint="go">
+          <button class="act main start-btn" id="startBtn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>
+            Starta räknaren
+          </button>
+        </form>
+      </section>
+
+      <section class="card counter" id="counterCard" hidden>
+        <div class="run-head">
+          <div class="run-info">
+            <span class="machine-tag" id="runMachine"></span>
+            <span class="seq-tag">Sekvens <b id="runSeq"></b></span>
+            <span class="since">Startad <b id="runStart"></b></span>
           </div>
+          <button class="btn ghost end-btn" id="endRun">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            Avsluta körning
+          </button>
+        </div>
+        <div class="inner">
+          <div class="label center">Radenheter i körningen</div>
           <div class="big" id="big">0</div>
+          <div class="break-note" id="runBreak" hidden></div>
           <div class="progress-meta">
-            <span>Framsteg mot mål: <b id="pct">0%</b></span>
+            <span>Skiftmål: <b id="shiftTotal">0</b> av <b id="shiftGoal">0</b> · <b id="pct">0%</b></span>
             <span class="left" id="left"></span>
           </div>
           <div class="bar" id="bar"><div></div></div>
           <div class="actions">
             <button class="act" id="minus">−1</button>
-            <button class="act main" id="plus">+1 RADENHET<small id="plusMachine"></small></button>
+            <button class="act main" id="plus">+1 RADENHET</button>
             <button class="act" id="plus5">+5</button>
           </div>
           <div class="hint">Klicka på <kbd>+1</kbd> eller tryck på <kbd>Mellanslag</kbd> på tangentbordet. <kbd>−</kbd> ångrar en.</div>
@@ -283,17 +355,17 @@
       <div class="stats">
         <div class="card stat"><div class="label">Mål (skift)</div>
           <div class="val"><input id="mal" type="number" min="0" inputmode="numeric"><small>st</small></div></div>
-        <div class="card stat"><div class="label">Takt (snitt)</div>
-          <div class="val"><span id="takt">0</span><small>enheter/h</small></div></div>
+        <div class="card stat highlight"><div class="label">Tid per enhet</div>
+          <div class="val"><span id="perUnit">–</span></div><div class="sub">snitt i körningen</div></div>
+        <div class="card stat"><div class="label">Effektiv tid</div>
+          <div class="val"><span id="effTime">–</span></div><div class="sub" id="effSub"></div></div>
         <div class="card stat"><div class="label">Beräknat klart</div>
-          <div class="val"><span id="eta">--:--</span></div></div>
-        <div class="card stat"><div class="label">Skiftstart</div>
-          <div class="val"><span id="start">--:--</span></div></div>
+          <div class="val"><span id="eta">--:--</span></div><div class="sub">skiftmålet, med raster</div></div>
       </div>
 
       <section class="card breakdown">
-        <span class="label">Per maskin detta skift</span>
-        <div id="breakdown"></div>
+        <div class="row-between"><span class="label">Körningar detta skift</span><span class="pill" id="runCount">0 st</span></div>
+        <div id="runs"></div>
       </section>
     </main>
 
@@ -321,12 +393,17 @@
     <div class="drawer-body">
       <div class="section">
         <h3>Maskiner</h3>
-        <p class="sub">Maskintyper och deras storlekar. Visas som val ovanför räknaren.</p>
+        <p class="sub">Maskintyper och deras storlekar. Visas som val när en körning startas.</p>
         <form class="field" id="addType">
           <input placeholder="Ny maskintyp, t.ex. TPV" maxlength="20" autocomplete="off" autocapitalize="characters">
           <button class="btn">Lägg till</button>
         </form>
         <div id="typeList"></div>
+      </div>
+      <div class="section">
+        <h3>Raster</h3>
+        <p class="sub">Raster per skift dras av från tiden när tid per enhet och beräknad klar-tid räknas ut.</p>
+        <div id="breakList"></div>
       </div>
       <div class="section">
         <h3>Linjer</h3>
@@ -352,6 +429,21 @@
   </div>
 </dialog>
 
+<dialog class="confirm" id="codeDialog">
+  <div class="confirm-inner">
+    <h3>Inställningar</h3>
+    <p>Ange kod för att ändra inställningar.</p>
+    <form id="codeForm">
+      <input class="seq-input" id="codeInput" type="password" autocomplete="off" placeholder="Kod" style="height:52px;font-size:1.2rem;margin-bottom:6px">
+      <div class="code-msg" id="codeMsg"></div>
+      <div class="dialog-row">
+        <button class="btn ghost" type="button" id="codeCancel">Avbryt</button>
+        <button class="btn" type="submit">Öppna</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -363,6 +455,16 @@
   };
   const hhmm = (d) => new Date(d).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
   const hhmmss = (d) => new Date(d).toLocaleTimeString('sv-SE');
+  const DAG = 864e5;
+
+  function langd(ms) {
+    if (!isFinite(ms) || ms < 0) return '–';
+    const s = Math.round(ms / 1000);
+    if (s < 60) return `${s} s`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} min ${String(s % 60).padStart(2, '0')} s`;
+    return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`;
+  }
 
   const ICON = {
     soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
@@ -374,7 +476,7 @@
   };
 
   const state = {
-    config: { linjer: [], maskintyper: [], skift: [] },
+    config: { linjer: [], maskintyper: [], skift: [], raster: [] },
     skift: null,
     linje: store.get('linje', null),
     skiftNamn: store.get('skiftNamn', null),
@@ -382,9 +484,8 @@
     storlek: store.get('storlek', null),
     sound: store.get('sound', true),
     queue: Promise.resolve(),
-    busy: 0,      // antal registreringar som väntar på servern
+    busy: 0,       // registreringar som väntar på servern
     optimistic: 0, // summa av väntande registreringar
-    pendingMaskin: {}, // väntande registreringar per maskin
     lastLogId: 0,
   };
 
@@ -392,7 +493,7 @@
   async function api(path, opts = {}) {
     let res;
     try {
-      res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json' } });
+      res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'x-installningskod': settingsKod() } });
     } catch {
       setOnline(false);
       throw new Error('Ingen kontakt med servern');
@@ -406,10 +507,14 @@
   const patch = (p, body) => api(p, { method: 'PATCH', body: JSON.stringify(body || {}) });
   const del = (p) => api(p, { method: 'DELETE' });
 
-  function setOnline(on) {
+  let online = true;
+  function setOnline(on) { online = on; renderStatus(); }
+  function renderStatus() {
     const s = $('status');
-    s.textContent = on ? 'I drift' : 'Offline';
-    s.classList.toggle('off', !on);
+    const rast = aktuellRast(Date.now());
+    s.classList.toggle('off', !online);
+    s.classList.toggle('break', online && !!rast);
+    s.textContent = !online ? 'Offline' : rast ? `Rast till ${hhmm(rast[1])}` : 'I drift';
   }
 
   let toastTimer;
@@ -429,6 +534,51 @@
     d.returnValue = '';
     d.showModal();
     return new Promise((r) => d.addEventListener('close', () => r(d.returnValue === 'ja'), { once: true }));
+  }
+
+  // ---------- Raster och effektiv tid ----------
+  // Rasterna är klockslag som gäller varje dag för valt skift. Räknas i webbläsarens lokala tid.
+  function rasterFor(skiftNamn = state.skiftNamn) {
+    return state.config.raster.filter((r) => r.skift === skiftNamn);
+  }
+
+  function rastIntervall(fran, till, raster = rasterFor()) {
+    const ut = [];
+    const dag = new Date(fran); dag.setHours(0, 0, 0, 0);
+    for (let d = dag.getTime() - DAG; d <= till; d += DAG) {
+      for (const r of raster) {
+        const [sh, sm] = r.start.split(':').map(Number);
+        const [eh, em] = r.slut.split(':').map(Number);
+        const b = new Date(d); b.setHours(sh, sm, 0, 0);
+        const e = new Date(d); e.setHours(eh, em, 0, 0);
+        let s = b.getTime(), t = e.getTime();
+        if (t <= s) t += DAG; // rast över midnatt
+        if (t > fran && s < till) ut.push([s, t]);
+      }
+    }
+    return ut.sort((a, b) => a[0] - b[0]);
+  }
+
+  function effektivTid(fran, till) {
+    let rast = 0;
+    for (const [s, e] of rastIntervall(fran, till)) rast += Math.min(e, till) - Math.max(s, fran);
+    return { total: till - fran, rast, effektiv: till - fran - rast };
+  }
+
+  function aktuellRast(nu) {
+    return rastIntervall(nu - DAG, nu + 1).find(([s, e]) => s <= nu && nu < e) || null;
+  }
+
+  // Lägger till arbetstid från en tidpunkt och hoppar över raster.
+  function plusArbetstid(fran, ms) {
+    let t = fran, kvar = ms;
+    for (let i = 0; i < 200; i++) {
+      const nasta = rastIntervall(t, t + kvar + 2 * DAG).find(([, e]) => e > t);
+      if (!nasta || t + kvar <= nasta[0]) return t + kvar;
+      if (t < nasta[0]) kvar -= nasta[0] - t;
+      t = nasta[1];
+    }
+    return t + kvar;
   }
 
   // ---------- Ljud ----------
@@ -466,7 +616,7 @@
     renderThemeBtn();
   };
 
-  // ---------- Val av linje/skift/maskin ----------
+  // ---------- Linje, skift och maskinval ----------
   function skiftEfterKlockan() {
     const h = new Date().getHours();
     return h >= 6 && h < 14 ? 'Förmiddag' : h >= 14 && h < 22 ? 'Eftermiddag' : 'Natt';
@@ -490,15 +640,14 @@
     store.set('typ', state.typ); store.set('storlek', state.storlek);
 
     $('types').innerHTML = typer.length
-      ? typer.map((t) => `<button data-typ="${esc(t.namn)}" class="${t.namn === state.typ ? 'on' : ''}">${esc(t.namn)}</button>`).join('')
+      ? typer.map((t) => `<button type="button" data-typ="${esc(t.namn)}" class="${t.namn === state.typ ? 'on' : ''}">${esc(t.namn)}</button>`).join('')
       : '<span class="none">Inga maskiner – lägg till under Inställningar</span>';
     $('sizes').innerHTML = typ
       ? (typ.storlekar.length
-          ? typ.storlekar.map((s) => `<button data-storlek="${s}" class="${s === state.storlek ? 'on' : ''}">${s}</button>`).join('')
-          : '<span class="none">Inga storlekar för ' + esc(typ.namn) + '</span>')
+          ? typ.storlekar.map((s) => `<button type="button" data-storlek="${s}" class="${s === state.storlek ? 'on' : ''}">${s}</button>`).join('')
+          : `<span class="none">Inga storlekar för ${esc(typ.namn)}</span>`)
       : '';
-    $('plusMachine').textContent = state.typ && state.storlek ? `${state.typ} ${state.storlek}` : 'välj maskin';
-    renderButtons();
+    $('startBtn').disabled = !(state.typ && state.storlek && state.skift);
   }
 
   $('types').onclick = (e) => {
@@ -513,49 +662,74 @@
     if (!b) return;
     state.storlek = Number(b.dataset.storlek);
     renderPicker();
+    $('seq').focus();
   };
-  $('linje').onchange = () => { state.linje = Number($('linje').value); store.set('linje', state.linje); loadSkift(); };
-  $('skift').onchange = () => { state.skiftNamn = $('skift').value; store.set('skiftNamn', state.skiftNamn); loadSkift(); };
+  $('linje').onchange = () => { state.linje = Number($('linje').value); store.set('linje', state.linje); state.skift = null; loadSkift(); };
+  $('skift').onchange = () => { state.skiftNamn = $('skift').value; store.set('skiftNamn', state.skiftNamn); state.skift = null; loadSkift(); };
 
-  // ---------- Skift ----------
-  function antalFor(typ, storlek) {
-    const sparat = state.skift?.perMaskin.find((m) => m.typ === typ && m.storlek === storlek)?.antal || 0;
-    return sparat + (state.pendingMaskin[`${typ}|${storlek}`] || 0);
-  }
+  // ---------- Starta / avsluta körning ----------
+  $('startForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const sekvensnr = $('seq').value.trim();
+    if (!state.skift) return;
+    if (!state.typ || !state.storlek) return toast('Välj maskintyp och storlek', true);
+    if (!sekvensnr) { $('seq').focus(); return toast('Skriv in sekvensnummer', true); }
+    try {
+      state.skift = await post(`/api/skift/${state.skift.id}/korningar`, { typ: state.typ, storlek: state.storlek, sekvensnr });
+      $('seq').value = '';
+      render();
+      beep(660, 0.1);
+      toast(`Körning startad: ${state.typ} ${state.storlek} · ${sekvensnr}`);
+    } catch (err) { toast(err.message, true); }
+  };
 
-  function renderButtons() {
-    const ready = !!(state.skift && state.typ && state.storlek);
-    $('plus').disabled = !ready;
-    $('plus5').disabled = !ready;
-    $('minus').disabled = !ready || antalFor(state.typ, state.storlek) <= 0;
-  }
+  $('endRun').onclick = async () => {
+    const k = state.skift?.korning;
+    if (!k) return;
+    const antal = k.antal + state.optimistic;
+    const ok = await confirmBox('Avsluta körningen?',
+      `${k.typ} ${k.storlek} · sekvens ${k.sekvensnr}: ${antal} radenheter. Körningen sparas och du kan starta en ny.`, 'Avsluta');
+    if (!ok) return;
+    try {
+      await state.queue;
+      state.skift = await post(`/api/korningar/${k.id}/avsluta`);
+      render();
+      toast('Körningen avslutad');
+      $('seq').focus();
+    } catch (err) { toast(err.message, true); }
+  };
 
-  function renderSkift() {
+  // ---------- Rendering ----------
+  function render() {
     const s = state.skift;
+    const k = s?.korning;
+    $('startCard').hidden = !!k;
+    $('counterCard').hidden = !k;
+    renderPicker();
     if (!s) return;
+
     const total = s.total + state.optimistic;
     const mal = s.mal;
     const pct = mal > 0 ? Math.min(100, Math.round((total / mal) * 100)) : 0;
     const done = mal > 0 && total >= mal;
 
-    $('big').textContent = total;
-    $('big').classList.toggle('done', done);
+    if (k) {
+      const antal = k.antal + state.optimistic;
+      $('runMachine').textContent = `${k.typ} ${k.storlek}`;
+      $('runSeq').textContent = k.sekvensnr;
+      $('runStart').textContent = hhmm(k.start);
+      $('big').textContent = antal;
+      $('minus').disabled = antal <= 0;
+    }
     $('pct').textContent = pct + '%';
+    $('shiftTotal').textContent = total;
+    $('shiftGoal').textContent = mal;
     $('bar').firstElementChild.style.width = pct + '%';
     $('bar').classList.toggle('done', done);
     $('left').innerHTML = mal === 0 ? 'Inget mål satt' : done ? '<b style="color:var(--ok)">Mål uppnått ✓</b>' : `<b>${mal - total}</b> kvar till mål`;
     if (document.activeElement !== $('mal')) $('mal').value = mal;
-    $('start').textContent = hhmm(s.start);
-    renderRate();
-
-    // Per maskin
-    const max = Math.max(1, ...s.perMaskin.map((m) => m.antal));
-    $('breakdown').innerHTML = s.perMaskin.length
-      ? `<div class="bd-list">${s.perMaskin.map((m) => `
-          <div class="bd"><span class="name">${esc(m.typ)} ${m.storlek}</span>
-            <div class="mini"><div style="width:${(m.antal / max) * 100}%"></div></div>
-            <span class="n">${m.antal}</span></div>`).join('')}</div>`
-      : '<div class="muted-empty">Inga registreringar ännu på detta skift.</div>';
+    renderTider();
+    renderKorningar();
 
     // Logg
     const n = s.handelser.length;
@@ -564,22 +738,60 @@
       ? s.handelser.map((h) => `<li class="${h.id > state.lastLogId && state.lastLogId ? 'new' : ''}">
           <time>${hhmmss(h.tid)}</time>
           <span class="delta ${h.antal < 0 ? 'neg' : ''}">${h.antal > 0 ? '+' : '−'}${Math.abs(h.antal)}</span>
-          <span class="m">${esc(h.typ)} ${h.storlek}</span></li>`).join('')
+          <span class="m">${esc(h.typ)} ${h.storlek}${h.sekvensnr ? `<small>${esc(h.sekvensnr)}</small>` : ''}</span></li>`).join('')
       : '<li class="empty">Inga registreringar ännu på detta skift.</li>';
     state.lastLogId = s.handelser[0]?.id || 0;
-    renderButtons();
   }
 
-  function renderRate() {
+  // Uppdateras varje sekund: tid per enhet, effektiv tid, beräknat klart och rast-status.
+  function renderTider() {
+    renderStatus();
     const s = state.skift;
     if (!s) return;
+    const k = s.korning;
+    const nu = Date.now();
     const total = s.total + state.optimistic;
-    const timmar = (Date.now() - new Date(s.start).getTime()) / 3.6e6;
-    const takt = timmar > 1 / 60 ? total / timmar : 0;
-    $('takt').textContent = takt >= 10 ? Math.round(takt) : takt.toFixed(1).replace('.', ',').replace(',0', '');
+    let perEnhet = NaN;
+
+    if (k) {
+      const antal = k.antal + state.optimistic;
+      const t = effektivTid(new Date(k.start).getTime(), nu);
+      perEnhet = antal > 0 ? t.effektiv / antal : NaN;
+      $('perUnit').textContent = langd(perEnhet);
+      $('effTime').textContent = langd(t.effektiv);
+      $('effSub').textContent = t.rast > 0 ? `exkl. ${langd(t.rast)} rast` : 'ingen rast ännu';
+    } else {
+      $('perUnit').textContent = '–';
+      $('effTime').textContent = '–';
+      $('effSub').textContent = 'ingen körning';
+    }
+    const rast = aktuellRast(nu);
+    $('runBreak').hidden = !(k && rast);
+    if (rast) $('runBreak').textContent = `Rast till ${hhmm(rast[1])} – tiden står still`;
+
     if (s.mal > 0 && total >= s.mal) $('eta').textContent = 'Klart ✓';
-    else if (takt > 0 && s.mal > 0) $('eta').textContent = hhmm(Date.now() + ((s.mal - total) / takt) * 3.6e6);
+    else if (s.mal > 0 && isFinite(perEnhet)) $('eta').textContent = hhmm(plusArbetstid(nu, (s.mal - total) * perEnhet));
     else $('eta').textContent = '--:--';
+  }
+
+  function renderKorningar() {
+    const s = state.skift;
+    const lista = s?.korningar || [];
+    $('runCount').textContent = `${lista.length} st`;
+    $('runs').innerHTML = lista.length
+      ? `<table><thead><tr><th>Sekvensnr</th><th>Maskin</th><th class="num">Antal</th><th class="num">Tid/enhet</th><th>Tid</th></tr></thead><tbody>
+        ${lista.map((k) => {
+          const aktiv = !k.slut;
+          const antal = k.antal + (aktiv ? state.optimistic : 0);
+          const t = effektivTid(new Date(k.start).getTime(), aktiv ? Date.now() : new Date(k.slut).getTime());
+          return `<tr class="${aktiv ? 'active' : ''}">
+            <td class="mono">${esc(k.sekvensnr)}</td>
+            <td class="mono">${esc(k.typ)} ${k.storlek}</td>
+            <td class="num mono"><b>${antal}</b></td>
+            <td class="num mono">${antal > 0 ? langd(t.effektiv / antal) : '–'}</td>
+            <td class="when">${hhmm(k.start)}–${aktiv ? '<span class="live">pågår</span>' : hhmm(k.slut)}</td></tr>`;
+        }).join('')}</tbody></table>`
+      : '<div class="muted-empty">Inga körningar ännu på detta skift.</div>';
   }
 
   async function loadSkift() {
@@ -589,8 +801,10 @@
       const s = await api(`/api/skift?linje=${state.linje}&skift=${encodeURIComponent(state.skiftNamn)}`);
       if (want !== `${state.linje}|${state.skiftNamn}` || state.busy) return; // användaren bytte eller räknar just nu
       if (s.id !== state.skift?.id) state.lastLogId = 0;
+      const varAktiv = state.skift?.korning?.id;
       state.skift = s;
-      renderSkift();
+      render();
+      if (!s.korning && varAktiv !== undefined && document.activeElement === document.body) $('seq').focus();
     } catch (err) {
       toast(err.message, true);
     }
@@ -599,37 +813,32 @@
   // Registreringar körs i tur och ordning så att räknaren alltid stämmer med servern.
   function registrera(antal) {
     const s = state.skift;
-    if (!s || !state.typ || !state.storlek) return;
-    if (antal < 0 && antalFor(state.typ, state.storlek) + antal < 0) {
-      return toast(`Inga ${state.typ} ${state.storlek} att ta bort`, true);
-    }
-    const body = { typ: state.typ, storlek: state.storlek, antal };
-    const mk = `${body.typ}|${body.storlek}`;
+    const k = s?.korning;
+    if (!k) return;
+    if (antal < 0 && k.antal + state.optimistic + antal < 0) return;
     const fore = s.total + state.optimistic;
     state.busy++;
     state.optimistic += antal;
-    state.pendingMaskin[mk] = (state.pendingMaskin[mk] || 0) + antal;
-    renderSkift();
+    render();
     bump();
     beep(antal > 0 ? 880 : 440);
     if (navigator.vibrate) navigator.vibrate(10);
     if (s.mal > 0 && fore < s.mal && fore + antal >= s.mal) {
       setTimeout(() => { beep(1175, 0.12); setTimeout(() => beep(1568, 0.18), 130); }, 90);
-      toast('Mål uppnått! 🎉');
+      toast('Skiftmålet uppnått! 🎉');
     }
 
     state.queue = state.queue.then(async () => {
       try {
-        const ny = await post(`/api/skift/${s.id}/handelser`, body);
+        const ny = await post(`/api/skift/${s.id}/handelser`, { antal });
         state.optimistic -= antal;
         if (state.skift?.id === ny.id) state.skift = ny;
       } catch (err) {
         state.optimistic -= antal;
         toast(err.message, true);
       } finally {
-        state.pendingMaskin[mk] -= antal;
         state.busy--;
-        renderSkift();
+        render();
       }
     });
   }
@@ -645,7 +854,7 @@
   $('minus').onclick = () => registrera(-1);
 
   document.addEventListener('keydown', (e) => {
-    if (e.target.closest('input, select, textarea, dialog') || e.repeat) return;
+    if (e.target.closest('input, select, textarea, dialog') || e.repeat || !state.skift?.korning) return;
     if (e.code === 'Space') { e.preventDefault(); registrera(1); }
     else if (e.key === '-' || e.code === 'NumpadSubtract') { e.preventDefault(); registrera(-1); }
     else if (e.key === '+' || e.code === 'NumpadAdd') { e.preventDefault(); registrera(1); }
@@ -659,7 +868,7 @@
       if (!Number.isInteger(mal) || mal < 0 || !state.skift) return;
       try {
         state.skift = await patch(`/api/skift/${state.skift.id}`, { mal });
-        renderSkift();
+        render();
       } catch (err) { toast(err.message, true); }
     }, 500);
   });
@@ -669,20 +878,20 @@
     if (!s) return;
     const linje = state.config.linjer.find((l) => l.id === state.linje)?.namn;
     const ok = await confirmBox('Nollställ inför nytt skift?',
-      `${linje}, ${s.namn}: ${s.total} radenheter sparas i historiken och ett nytt skift startar på 0.`, 'Nollställ');
+      `${linje}, ${s.namn}: ${s.total} radenheter och ${s.korningar.length} körningar sparas i historiken. Pågående körning avslutas och ett nytt skift startar på 0.`, 'Nollställ');
     if (!ok) return;
     try {
       await state.queue;
       state.skift = await post(`/api/skift/${s.id}/nytt`);
       state.lastLogId = 0;
-      renderSkift();
+      render();
       toast('Nytt skift startat');
     } catch (err) { toast(err.message, true); }
   };
 
   // ---------- Inställningar ----------
   function renderSettings() {
-    const { maskintyper, linjer } = state.config;
+    const { maskintyper, linjer, skift, raster } = state.config;
     $('typeList').innerHTML = maskintyper.map((t) => `
       <div class="item" data-typ="${esc(t.namn)}">
         <div class="item-head"><strong>${esc(t.namn)}</strong>
@@ -695,6 +904,23 @@
           <button class="btn ghost">Lägg till</button>
         </form>
       </div>`).join('');
+    $('breakList').innerHTML = skift.map((sk) => {
+      const rs = raster.filter((r) => r.skift === sk);
+      const sum = rs.reduce((a, r) => {
+        const [sh, sm] = r.start.split(':').map(Number), [eh, em] = r.slut.split(':').map(Number);
+        return a + (((eh * 60 + em) - (sh * 60 + sm) + 1440) % 1440);
+      }, 0);
+      return `<div class="item" data-skift="${esc(sk)}">
+        <div class="item-head"><strong style="font-family:inherit">${esc(sk)}</strong><span class="pill">${sum} min</span></div>
+        <div class="chips">${rs.length
+          ? rs.map((r) => `<span class="chip">${r.start}–${r.slut}<button data-del-break="${r.id}" title="Ta bort rast">${ICON.x}</button></span>`).join('')
+          : '<span class="muted-empty" style="margin:0">Inga raster</span>'}</div>
+        <form class="field times" data-add-break>
+          <input type="time" required aria-label="Rast start"><span>–</span><input type="time" required aria-label="Rast slut">
+          <button class="btn ghost">Lägg till</button>
+        </form>
+      </div>`;
+    }).join('');
     $('lineList').innerHTML = linjer.map((l) => `
       <div class="item" data-linje="${l.id}">
         <div class="item-head"><input value="${esc(l.namn)}" maxlength="40" aria-label="Namn på linje">
@@ -706,12 +932,34 @@
     state.config = cfg;
     const linjeFore = state.linje;
     renderSelects();
-    renderPicker();
     renderSettings();
     if (state.linje !== linjeFore || !state.skift) loadSkift();
+    else render();
   }
 
-  $('openSettings').onclick = () => $('settings').showModal();
+  // Inställningar skyddas med en kod som gäller tills fliken stängs.
+  function settingsKod() { try { return sessionStorage.getItem('kod') || ''; } catch { return ''; } }
+  $('openSettings').onclick = () => {
+    if (settingsKod()) return $('settings').showModal();
+    $('codeInput').value = '';
+    $('codeMsg').textContent = '';
+    $('codeDialog').showModal();
+    $('codeInput').focus();
+  };
+  $('codeCancel').onclick = () => $('codeDialog').close();
+  $('codeForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const kod = $('codeInput').value;
+    try {
+      await post('/api/installningar/kod', { kod });
+      try { sessionStorage.setItem('kod', kod); } catch {}
+      $('codeDialog').close();
+      $('settings').showModal();
+    } catch {
+      $('codeMsg').textContent = 'Fel kod, försök igen';
+      $('codeInput').select();
+    }
+  };
   $('closeSettings').onclick = () => $('settings').close();
   $('settings').addEventListener('click', (e) => { if (e.target === $('settings')) $('settings').close(); });
 
@@ -742,13 +990,27 @@
     if (!item) return;
     const typ = item.dataset.typ;
     if (e.target.closest('[data-del-type]')) {
-      if (!(await confirmBox(`Ta bort ${typ}?`, 'Typen och dess storlekar tas bort från valen. Gjorda registreringar finns kvar i loggen.', 'Ta bort'))) return;
+      if (!(await confirmBox(`Ta bort ${typ}?`, 'Typen och dess storlekar tas bort från valen. Gjorda körningar och registreringar finns kvar.', 'Ta bort'))) return;
       try { applyConfig(await del(`/api/maskintyper/${encodeURIComponent(typ)}`)); } catch (err) { toast(err.message, true); }
     }
     const sz = e.target.closest('[data-del-size]');
     if (sz) {
       try { applyConfig(await del(`/api/maskintyper/${encodeURIComponent(typ)}/storlekar/${sz.dataset.delSize}`)); } catch (err) { toast(err.message, true); }
     }
+  });
+
+  $('breakList').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const skift = e.target.closest('[data-skift]').dataset.skift;
+    const [start, slut] = [...e.target.querySelectorAll('input')].map((i) => i.value);
+    try { applyConfig(await post('/api/raster', { skift, start, slut })); toast(`Rast ${start}–${slut} tillagd för ${skift}`); }
+    catch (err) { toast(err.message, true); }
+  });
+
+  $('breakList').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-del-break]');
+    if (!b) return;
+    try { applyConfig(await del(`/api/raster/${b.dataset.delBreak}`)); } catch (err) { toast(err.message, true); }
   });
 
   $('addLine').onsubmit = async (e) => {
@@ -770,7 +1032,7 @@
     if (!e.target.closest('[data-del-line]')) return;
     const id = Number(e.target.closest('[data-linje]').dataset.linje);
     const namn = state.config.linjer.find((l) => l.id === id)?.namn;
-    if (!(await confirmBox(`Ta bort ${namn}?`, 'Linjen och alla dess skift och registreringar tas bort permanent.', 'Ta bort'))) return;
+    if (!(await confirmBox(`Ta bort ${namn}?`, 'Linjen och alla dess skift, körningar och registreringar tas bort permanent.', 'Ta bort'))) return;
     try {
       if (state.linje === id) state.skift = null;
       applyConfig(await del(`/api/linjer/${id}`));
@@ -782,7 +1044,7 @@
   renderThemeBtn();
   setInterval(() => {
     $('clock').textContent = hhmmss(Date.now());
-    renderRate();
+    renderTider();
   }, 1000);
   $('clock').textContent = hhmmss(Date.now());
   // Håll flera skärmar i synk.

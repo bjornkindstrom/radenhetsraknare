@@ -4,6 +4,8 @@ const { Pool } = require('pg');
 
 const PORT = process.env.PORT || 3000;
 const SKIFT = ['Förmiddag', 'Eftermiddag', 'Natt'];
+// Kod som krävs för att ändra inställningar. Kan bytas med miljövariabeln SETTINGS_CODE i Render.
+const SETTINGS_CODE = process.env.SETTINGS_CODE || 'rowunit';
 
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL saknas');
@@ -17,6 +19,7 @@ const pool = new Pool({
 });
 
 async function initDb() {
+  const { rows: fanns } = await pool.query("SELECT to_regclass('raster') IS NOT NULL AS finns");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS linjer (
       id     SERIAL      PRIMARY KEY,
@@ -51,7 +54,32 @@ async function initDb() {
       tid      TIMESTAMPTZ NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS handelser_skift ON handelser (skift_id, tid DESC);
+    CREATE TABLE IF NOT EXISTS korningar (
+      id        SERIAL      PRIMARY KEY,
+      skift_id  INTEGER     NOT NULL REFERENCES skift (id) ON DELETE CASCADE,
+      typ       TEXT        NOT NULL,
+      storlek   INTEGER     NOT NULL,
+      sekvensnr TEXT        NOT NULL,
+      start     TIMESTAMPTZ NOT NULL DEFAULT now(),
+      slut      TIMESTAMPTZ
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS korning_aktiv ON korningar (skift_id) WHERE slut IS NULL;
+    ALTER TABLE handelser ADD COLUMN IF NOT EXISTS korning_id INTEGER REFERENCES korningar (id) ON DELETE CASCADE;
+    CREATE TABLE IF NOT EXISTS raster (
+      id    SERIAL PRIMARY KEY,
+      skift TEXT   NOT NULL,
+      start TIME   NOT NULL,
+      slut  TIME   NOT NULL CHECK (slut <> start)
+    );
   `);
+
+  // Exempelraster första gången – ändras under Inställningar.
+  if (!fanns[0].finns) {
+    await pool.query(`INSERT INTO raster (skift, start, slut) VALUES
+      ('Förmiddag', '09:00', '09:15'), ('Förmiddag', '11:30', '12:00'),
+      ('Eftermiddag', '17:00', '17:15'), ('Eftermiddag', '19:00', '19:30'),
+      ('Natt', '01:00', '01:30'), ('Natt', '03:30', '03:45')`);
+  }
 
   const { rows } = await pool.query('SELECT (SELECT count(*) FROM linjer)::int AS l, (SELECT count(*) FROM maskintyper)::int AS m');
   if (rows[0].l === 0) {
@@ -88,16 +116,29 @@ app.get('/health', async (_req, res) => {
 
 // ---- Inställningar ----
 
+// Alla ändringar av linjer, maskiner och raster kräver koden i headern x-installningskod.
+app.use(['/api/linjer', '/api/maskintyper', '/api/raster'], (req, res, next) => {
+  if (req.method === 'GET' || req.get('x-installningskod') === SETTINGS_CODE) return next();
+  res.status(403).json({ fel: 'Fel kod för inställningar' });
+});
+
+app.post('/api/installningar/kod', (req, res) => {
+  if (req.body?.kod === SETTINGS_CODE) return res.json({ ok: true });
+  res.status(403).json({ fel: 'Fel kod' });
+});
+
 async function config() {
-  const [linjer, typer] = await Promise.all([
+  const [linjer, typer, raster] = await Promise.all([
     pool.query('SELECT id, namn FROM linjer ORDER BY id'),
     pool.query(`
       SELECT m.namn,
              COALESCE(array_agg(s.storlek ORDER BY s.storlek) FILTER (WHERE s.storlek IS NOT NULL), '{}') AS storlekar
       FROM maskintyper m LEFT JOIN storlekar s ON s.typ = m.namn
       GROUP BY m.namn, m.ordning ORDER BY m.ordning`),
+    pool.query(`SELECT id, skift, to_char(start, 'HH24:MI') AS start, to_char(slut, 'HH24:MI') AS slut
+                FROM raster ORDER BY array_position($1::text[], skift), start`, [SKIFT]),
   ]);
-  return { linjer: linjer.rows, maskintyper: typer.rows, skift: SKIFT };
+  return { linjer: linjer.rows, maskintyper: typer.rows, skift: SKIFT, raster: raster.rows };
 }
 
 app.get('/api/config', h(async (_req, res) => res.json(await config())));
@@ -163,20 +204,40 @@ app.delete('/api/maskintyper/:namn/storlekar/:storlek', h(async (req, res) => {
   res.json(await config());
 }));
 
-// ---- Skift och registreringar ----
+const TID = /^([01]?\d|2[0-3]):[0-5]\d$/;
+
+app.post('/api/raster', h(async (req, res) => {
+  const { skift, start, slut } = req.body || {};
+  if (!SKIFT.includes(skift)) return res.status(400).json({ fel: 'Okänt skift' });
+  if (!TID.test(start || '') || !TID.test(slut || '') || start === slut) {
+    return res.status(400).json({ fel: 'Ange start och slut som TT:MM, t.ex. 09:00 och 09:15' });
+  }
+  await pool.query('INSERT INTO raster (skift, start, slut) VALUES ($1, $2, $3)', [skift, start, slut]);
+  res.status(201).json(await config());
+}));
+
+app.delete('/api/raster/:id', h(async (req, res) => {
+  await pool.query('DELETE FROM raster WHERE id = $1', [Number(req.params.id)]);
+  res.json(await config());
+}));
+
+// ---- Skift, körningar och registreringar ----
 
 async function skiftData(skiftId) {
-  const [skift, perMaskin, handelser] = await Promise.all([
+  const [skift, korningar, handelser] = await Promise.all([
     pool.query(`SELECT s.id, s.linje_id, s.namn, s.start, s.mal,
                        COALESCE((SELECT sum(antal) FROM handelser WHERE skift_id = s.id), 0)::int AS total
                 FROM skift s WHERE s.id = $1`, [skiftId]),
-    pool.query(`SELECT typ, storlek, sum(antal)::int AS antal FROM handelser
-                WHERE skift_id = $1 GROUP BY typ, storlek HAVING sum(antal) <> 0 ORDER BY typ, storlek`, [skiftId]),
-    pool.query(`SELECT id, typ, storlek, antal, tid FROM handelser
-                WHERE skift_id = $1 ORDER BY tid DESC, id DESC LIMIT 200`, [skiftId]),
+    pool.query(`SELECT k.id, k.typ, k.storlek, k.sekvensnr, k.start, k.slut,
+                       COALESCE((SELECT sum(antal) FROM handelser WHERE korning_id = k.id), 0)::int AS antal
+                FROM korningar k WHERE k.skift_id = $1 ORDER BY k.start DESC, k.id DESC`, [skiftId]),
+    pool.query(`SELECT h.id, h.typ, h.storlek, h.antal, h.tid, k.sekvensnr FROM handelser h
+                LEFT JOIN korningar k ON k.id = h.korning_id
+                WHERE h.skift_id = $1 ORDER BY h.tid DESC, h.id DESC LIMIT 200`, [skiftId]),
   ]);
   if (!skift.rows[0]) return null;
-  return { ...skift.rows[0], perMaskin: perMaskin.rows, handelser: handelser.rows, nu: new Date() };
+  const aktiv = korningar.rows.find((k) => !k.slut) || null;
+  return { ...skift.rows[0], korning: aktiv, korningar: korningar.rows, handelser: handelser.rows, nu: new Date() };
 }
 
 // Hämtar aktivt skift för linje + skiftnamn, skapar det om det inte finns.
@@ -211,13 +272,44 @@ app.patch('/api/skift/:id', h(async (req, res) => {
   res.json(await skiftData(Number(req.params.id)));
 }));
 
-// Registrera radenheter: { "typ": "TPV", "storlek": 12, "antal": 1 } (negativt antal = ta bort)
-app.post('/api/skift/:id/handelser', h(async (req, res) => {
+// Starta en körning: { "typ": "TPV", "storlek": 12, "sekvensnr": "123456" }
+app.post('/api/skift/:id/korningar', h(async (req, res) => {
   const skiftId = Number(req.params.id);
   const typ = normTyp(req.body?.typ);
   const storlek = posInt(req.body?.storlek);
+  const sekvensnr = String(req.body?.sekvensnr ?? '').trim();
+  if (!sekvensnr || sekvensnr.length > 40) return res.status(400).json({ fel: 'Ange ett sekvensnummer (max 40 tecken)' });
+  const { rowCount: finns } = await pool.query(
+    'SELECT 1 FROM storlekar WHERE typ = $1 AND storlek = $2', [typ, storlek]
+  );
+  if (!finns) return res.status(400).json({ fel: 'Välj en maskin som finns i Inställningar' });
+  const { rows: s } = await pool.query('SELECT slut FROM skift WHERE id = $1', [skiftId]);
+  if (!s[0]) return res.status(404).json({ fel: 'Skiftet finns inte' });
+  if (s[0].slut) return res.status(409).json({ fel: 'Skiftet är avslutat' });
+  try {
+    await pool.query(
+      'INSERT INTO korningar (skift_id, typ, storlek, sekvensnr) VALUES ($1, $2, $3, $4)',
+      [skiftId, typ, storlek, sekvensnr]
+    );
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ fel: 'En körning pågår redan på detta skift' });
+    throw err;
+  }
+  res.status(201).json(await skiftData(skiftId));
+}));
+
+app.post('/api/korningar/:id/avsluta', h(async (req, res) => {
+  const { rows } = await pool.query(
+    'UPDATE korningar SET slut = now() WHERE id = $1 AND slut IS NULL RETURNING skift_id', [Number(req.params.id)]
+  );
+  if (!rows[0]) return res.status(409).json({ fel: 'Körningen är redan avslutad' });
+  res.json(await skiftData(rows[0].skift_id));
+}));
+
+// Registrera radenheter på pågående körning: { "antal": 1 } (negativt antal = ta bort)
+app.post('/api/skift/:id/handelser', h(async (req, res) => {
+  const skiftId = Number(req.params.id);
   const antal = Number(req.body?.antal ?? 1);
-  if (!typ || storlek === null) return res.status(400).json({ fel: 'Välj maskintyp och storlek' });
   if (!Number.isInteger(antal) || antal === 0 || Math.abs(antal) > 1000) {
     return res.status(400).json({ fel: 'Ogiltigt antal' });
   }
@@ -228,19 +320,19 @@ app.post('/api/skift/:id/handelser', h(async (req, res) => {
     const { rows: s } = await client.query('SELECT slut FROM skift WHERE id = $1 FOR UPDATE', [skiftId]);
     if (!s[0]) { await client.query('ROLLBACK'); return res.status(404).json({ fel: 'Skiftet finns inte' }); }
     if (s[0].slut) { await client.query('ROLLBACK'); return res.status(409).json({ fel: 'Skiftet är avslutat' }); }
-    if (antal < 0) {
-      const { rows } = await client.query(
-        'SELECT COALESCE(sum(antal), 0)::int AS n FROM handelser WHERE skift_id = $1 AND typ = $2 AND storlek = $3',
-        [skiftId, typ, storlek]
-      );
-      if (rows[0].n + antal < 0) {
-        await client.query('ROLLBACK');
-        return res.status(409).json({ fel: `Det finns inga fler ${typ} ${storlek} att ta bort på detta skift` });
-      }
+    const { rows: k } = await client.query(
+      `SELECT k.id, k.typ, k.storlek,
+              COALESCE((SELECT sum(antal) FROM handelser WHERE korning_id = k.id), 0)::int AS n
+       FROM korningar k WHERE k.skift_id = $1 AND k.slut IS NULL`, [skiftId]
+    );
+    if (!k[0]) { await client.query('ROLLBACK'); return res.status(409).json({ fel: 'Starta en körning först' }); }
+    if (k[0].n + antal < 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ fel: 'Det finns inga fler enheter att ta bort i körningen' });
     }
     await client.query(
-      'INSERT INTO handelser (skift_id, typ, storlek, antal) VALUES ($1, $2, $3, $4)',
-      [skiftId, typ, storlek, antal]
+      'INSERT INTO handelser (skift_id, korning_id, typ, storlek, antal) VALUES ($1, $2, $3, $4, $5)',
+      [skiftId, k[0].id, k[0].typ, k[0].storlek, antal]
     );
     await client.query('COMMIT');
   } catch (err) {
@@ -268,6 +360,7 @@ app.post('/api/skift/:id/nytt', h(async (req, res) => {
       [rows[0].linje_id, rows[0].namn, rows[0].mal]
     );
     nyttId = ny[0].id;
+    await client.query('UPDATE korningar SET slut = now() WHERE skift_id = $1 AND slut IS NULL', [skiftId]);
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
