@@ -111,7 +111,7 @@
   .bar > div { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #3b82f6, #2563eb); transition: width .35s ease; }
   .bar.done > div { background: linear-gradient(90deg, #10b981, #059669); }
 
-  .actions { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 14px; margin-top: 26px; }
+  .actions { display: grid; grid-template-columns: 1fr 3fr; gap: 14px; margin-top: 26px; }
   .act { height: 72px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 800; font-size: 1.25rem;
     transition: transform .07s, background .15s, opacity .15s; user-select: none; }
   .act:active:not(:disabled) { transform: scale(.97); }
@@ -346,7 +346,6 @@
           <div class="actions">
             <button class="act" id="minus">−1</button>
             <button class="act main" id="plus">+1 RADENHET</button>
-            <button class="act" id="plus5">+5</button>
           </div>
           <div class="hint">Klicka på <kbd>+1</kbd> eller tryck på <kbd>Mellanslag</kbd> på tangentbordet. <kbd>−</kbd> ångrar en.</div>
         </div>
@@ -850,7 +849,6 @@
   }
 
   $('plus').onclick = () => registrera(1);
-  $('plus5').onclick = () => registrera(5);
   $('minus').onclick = () => registrera(-1);
 
   document.addEventListener('keydown', (e) => {

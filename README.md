@@ -6,7 +6,7 @@ Realtidsräknare för radenheter i produktionen. Per **linje** (flöde) och **sk
 
 1. Välj **linje** och **skift** uppe till höger.
 2. Välj **maskin** (typ och storlek) och skriv in **sekvensnumret**. Tryck **Starta räknaren**.
-3. Räkna med **+1**, **+5** och **−1**. Mellanslag ger +1 och `-` tar bort en.
+3. Räkna med **+1** och **−1**. Mellanslag ger +1 och `-` tar bort en.
 4. **Avsluta körning** sparar körningen och för tillbaka till startskärmen inför nästa maskin eller sekvens.
 5. **Nollställ inför nytt skift** avslutar skiftet. Historiken sparas och nästa skift börjar på 0 med samma mål.
 
