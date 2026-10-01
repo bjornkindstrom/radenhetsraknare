@@ -5,7 +5,7 @@ Realtidsräknare för radenheter i produktionen. Per **linje** (flöde) och **sk
 ## Så används den
 
 1. Välj **linje** och **skift** uppe till höger.
-2. Välj **maskintyp** och **storlek** och skriv in **sekvensnumret**. Tryck **Starta räknaren**. Inget är förvalt.
+2. Skriv in **sekvensnumret** (fältet är markerat direkt), välj **maskintyp** och **storlek** och tryck **Starta räknaren**. Ingen maskin är förvald.
 3. Räkna med **+1** och **−1**. Mellanslag ger +1 och `-` tar bort en. Räknaren visar t.ex. `7/12`, eftersom storleken är antalet radenheter i sekvensen.
 4. När sista radenheten är räknad blir sekvensen klar automatiskt och rutan **Nästa sekvens** visas. Där finns **Ångra senaste** om sista trycket blev fel.
 5. **Avsluta tidigt** avslutar en sekvens innan alla radenheter är gjorda.

@@ -331,11 +331,11 @@
           <button type="button" class="btn ghost" id="undoLast">Ångra senaste</button>
         </div>
         <form class="inner start-form" id="startForm" autocomplete="off">
-          <div class="step-label"><span>1</span> Vilken maskin kör du på?</div>
+          <div class="step-label"><span>1</span> Sekvensnummer</div>
+          <input class="seq-input" id="seq" placeholder="Skriv in sekvensnummer" maxlength="40" enterkeyhint="next" autofocus>
+          <div class="step-label"><span>2</span> Vilken maskin kör du på?</div>
           <div class="seg" id="types"></div>
           <div class="seg sizes" id="sizes"></div>
-          <div class="step-label"><span>2</span> Sekvensnummer</div>
-          <input class="seq-input" id="seq" placeholder="Skriv in sekvensnummer" maxlength="40" enterkeyhint="go">
           <button class="act main start-btn" id="startBtn">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>
             Starta räknaren
@@ -689,7 +689,7 @@
     if (!b) return;
     state.storlek = Number(b.dataset.storlek);
     renderPicker();
-    $('seq').focus();
+    if (!$('seq').value.trim()) $('seq').focus();
   };
   $('linje').onchange = () => { state.linje = Number($('linje').value); store.set('linje', state.linje); state.skift = null; loadSkift(); };
   $('skift').onchange = () => { state.skiftNamn = $('skift').value; store.set('skiftNamn', state.skiftNamn); state.skift = null; loadSkift(); };
@@ -699,8 +699,11 @@
     e.preventDefault();
     const sekvensnr = $('seq').value.trim();
     if (!state.skift) return;
-    if (!state.typ || !state.storlek) return toast('Välj maskintyp och storlek', true);
     if (!sekvensnr) { $('seq').focus(); return toast('Skriv in sekvensnummer', true); }
+    if (!state.typ || !state.storlek) {
+      $('seq').blur();
+      return toast(state.typ ? 'Välj storlek' : 'Välj maskintyp och storlek');
+    }
     try {
       state.skift = await post(`/api/skift/${state.skift.id}/korningar`, { typ: state.typ, storlek: state.storlek, sekvensnr });
       $('seq').value = '';
@@ -712,6 +715,15 @@
       toast(`Sekvens ${k.sekvensnr} startad: ${k.typ} ${k.storlek}`);
     } catch (err) { toast(err.message, true); }
   };
+
+  // Enter i sekvensfältet: starta om maskinen är vald, annars visa vad som saknas.
+  $('seq').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' || !$('startBtn').disabled) return;
+    e.preventDefault();
+    if (!$('seq').value.trim()) return;
+    $('seq').blur();
+    toast(state.typ ? 'Välj storlek' : 'Välj maskintyp och storlek');
+  });
 
   $('undoLast').onclick = async () => {
     const senast = state.skift?.korningar[0];
@@ -743,7 +755,9 @@
   function render() {
     const s = state.skift;
     const k = s?.korning;
+    const visaStart = !k && $('startCard').hidden;
     $('startCard').hidden = !!k;
+    if (visaStart && !document.querySelector('dialog[open]')) setTimeout(() => $('seq').focus(), 0);
     $('counterCard').hidden = !k;
     renderPicker();
     if (!s) return;
