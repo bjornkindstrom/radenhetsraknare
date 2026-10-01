@@ -306,6 +306,41 @@ app.post('/api/korningar/:id/avsluta', h(async (req, res) => {
   res.json(await skiftData(rows[0].skift_id));
 }));
 
+// Ångra sista radenheten i en klar sekvens: öppnar sekvensen igen och tar bort en enhet.
+app.post('/api/korningar/:id/angra', h(async (req, res) => {
+  const id = Number(req.params.id);
+  const client = await pool.connect();
+  let skiftId;
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `SELECT k.skift_id, k.typ, k.storlek, s.slut AS skift_slut,
+              EXISTS (SELECT 1 FROM korningar WHERE skift_id = k.skift_id AND slut IS NULL) AS annan_aktiv,
+              COALESCE((SELECT sum(antal) FROM handelser WHERE korning_id = k.id), 0)::int AS n
+       FROM korningar k JOIN skift s ON s.id = k.skift_id WHERE k.id = $1 FOR UPDATE OF k`, [id]
+    );
+    const k = rows[0];
+    if (!k) { await client.query('ROLLBACK'); return res.status(404).json({ fel: 'Körningen finns inte' }); }
+    if (k.skift_slut || k.annan_aktiv || k.n < 1) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ fel: 'Det går inte att ångra just nu' });
+    }
+    skiftId = k.skift_id;
+    await client.query('UPDATE korningar SET slut = NULL WHERE id = $1', [id]);
+    await client.query(
+      'INSERT INTO handelser (skift_id, korning_id, typ, storlek, antal) VALUES ($1, $2, $3, $4, -1)',
+      [k.skift_id, id, k.typ, k.storlek]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+  res.json(await skiftData(skiftId));
+}));
+
 // Registrera radenheter på pågående körning: { "antal": 1 } (negativt antal = ta bort)
 app.post('/api/skift/:id/handelser', h(async (req, res) => {
   const skiftId = Number(req.params.id);
@@ -330,10 +365,18 @@ app.post('/api/skift/:id/handelser', h(async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(409).json({ fel: 'Det finns inga fler enheter att ta bort i körningen' });
     }
+    if (k[0].n + antal > k[0].storlek) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ fel: `Sekvensen har bara ${k[0].storlek} radenheter` });
+    }
     await client.query(
       'INSERT INTO handelser (skift_id, korning_id, typ, storlek, antal) VALUES ($1, $2, $3, $4, $5)',
       [skiftId, k[0].id, k[0].typ, k[0].storlek, antal]
     );
+    // Storleken är antalet radenheter i sekvensen – när den är nådd är sekvensen klar.
+    if (k[0].n + antal === k[0].storlek) {
+      await client.query('UPDATE korningar SET slut = now() WHERE id = $1', [k[0].id]);
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

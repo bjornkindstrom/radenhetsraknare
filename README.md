@@ -5,10 +5,11 @@ Realtidsräknare för radenheter i produktionen. Per **linje** (flöde) och **sk
 ## Så används den
 
 1. Välj **linje** och **skift** uppe till höger.
-2. Välj **maskin** (typ och storlek) och skriv in **sekvensnumret**. Tryck **Starta räknaren**.
-3. Räkna med **+1** och **−1**. Mellanslag ger +1 och `-` tar bort en.
-4. **Avsluta körning** sparar körningen och för tillbaka till startskärmen inför nästa maskin eller sekvens.
-5. **Nollställ inför nytt skift** avslutar skiftet. Historiken sparas och nästa skift börjar på 0 med samma mål.
+2. Välj **maskintyp** och **storlek** och skriv in **sekvensnumret**. Tryck **Starta räknaren**. Inget är förvalt.
+3. Räkna med **+1** och **−1**. Mellanslag ger +1 och `-` tar bort en. Räknaren visar t.ex. `7/12`, eftersom storleken är antalet radenheter i sekvensen.
+4. När sista radenheten är räknad blir sekvensen klar automatiskt och rutan **Nästa sekvens** visas. Där finns **Ångra senaste** om sista trycket blev fel.
+5. **Avsluta tidigt** avslutar en sekvens innan alla radenheter är gjorda.
+6. **Nollställ inför nytt skift** avslutar skiftet. Historiken sparas och nästa skift börjar på 0 med samma mål.
 
 ## Funktioner
 
@@ -39,7 +40,8 @@ Första gången skapas *Linje 1 (Huvudflöde)*, *Linje 2*, maskinerna TPV, TPT o
 | `GET` | `/api/config` | Linjer, maskintyper, skiftnamn och raster |
 | `GET` | `/api/skift?linje=1&skift=Förmiddag` | Aktivt skift med pågående körning, körningar och logg |
 | `POST` | `/api/skift/:id/korningar` | Starta körning `{"typ":"TPV","storlek":12,"sekvensnr":"S-1234"}` |
-| `POST` | `/api/korningar/:id/avsluta` | Avsluta körning |
+| `POST` | `/api/korningar/:id/avsluta` | Avsluta körning tidigt (den avslutas automatiskt när antal = storlek) |
+| `POST` | `/api/korningar/:id/angra` | Öppna senaste klara sekvens igen och ta bort en radenhet |
 | `POST` | `/api/skift/:id/handelser` | Registrera på pågående körning `{"antal":1}` (negativt tar bort) |
 | `PATCH` | `/api/skift/:id` | Sätt mål `{"mal":40}` |
 | `POST` | `/api/skift/:id/nytt` | Avsluta skiftet och starta ett nytt |

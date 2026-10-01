@@ -251,6 +251,22 @@
   .field.times input { flex: 1; }
   .field.times span { color: var(--faint); }
 
+  .big .of { font-size: .38em; color: var(--faint); margin-left: .1em; letter-spacing: 0; }
+  .shift-line { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); margin: 14px 0 6px; }
+  .shift-line b { color: var(--text); }
+  .bar.thin { height: 6px; }
+  .bar.thin > div { background: var(--faint); }
+  .bar.thin.done > div { background: var(--ok); }
+  .done-banner { display: flex; align-items: center; gap: 14px; margin: 14px auto 4px; max-width: 600px; padding: 14px 16px;
+    border-radius: 14px; background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); animation: pop .35s ease; }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .done-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; flex: none; }
+  .done-icon svg { width: 22px; height: 22px; }
+  .done-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .done-text b { color: var(--ok); font-size: 1.02rem; }
+  .done-text span { color: var(--muted); font-size: .85rem; }
+  .done-banner .btn { height: 36px; font-size: .85rem; flex: none; }
+
   /* ---------- Responsivt ---------- */
   @media (max-width: 1000px) {
     .layout { grid-template-columns: 1fr; }
@@ -306,8 +322,13 @@
     <main>
       <section class="card counter start" id="startCard">
         <div class="row-between">
-          <span class="label">Starta körning</span>
+          <span class="label" id="startLabel">Starta körning</span>
           <span class="clock" id="clock">--:--:--</span>
+        </div>
+        <div class="done-banner" id="doneBanner" hidden>
+          <div class="done-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="done-text"><b id="doneTitle"></b><span id="doneSub"></span></div>
+          <button type="button" class="btn ghost" id="undoLast">Ångra senaste</button>
         </div>
         <form class="inner start-form" id="startForm" autocomplete="off">
           <div class="step-label"><span>1</span> Vilken maskin kör du på?</div>
@@ -331,18 +352,23 @@
           </div>
           <button class="btn ghost end-btn" id="endRun">
             <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-            Avsluta körning
+            Avsluta tidigt
           </button>
         </div>
         <div class="inner">
-          <div class="label center">Radenheter i körningen</div>
-          <div class="big" id="big">0</div>
+          <div class="label center">Radenheter i sekvensen</div>
+          <div class="big"><span id="big">0</span><span class="of">/<span id="bigOf">0</span></span></div>
           <div class="break-note" id="runBreak" hidden></div>
           <div class="progress-meta">
-            <span>Skiftmål: <b id="shiftTotal">0</b> av <b id="shiftGoal">0</b> · <b id="pct">0%</b></span>
-            <span class="left" id="left"></span>
+            <span>Sekvens: <b id="seqLeft">0</b> radenheter kvar</span>
+            <span class="left" id="seqPct">0%</span>
           </div>
-          <div class="bar" id="bar"><div></div></div>
+          <div class="bar" id="seqBar"><div></div></div>
+          <div class="shift-line">
+            <span>Skiftmål: <b id="shiftTotal">0</b> av <b id="shiftGoal">0</b> · <b id="pct">0%</b></span>
+            <span id="left"></span>
+          </div>
+          <div class="bar thin" id="bar"><div></div></div>
           <div class="actions">
             <button class="act" id="minus">−1</button>
             <button class="act main" id="plus">+1 RADENHET</button>
@@ -355,7 +381,7 @@
         <div class="card stat"><div class="label">Mål (skift)</div>
           <div class="val"><input id="mal" type="number" min="0" inputmode="numeric"><small>st</small></div></div>
         <div class="card stat highlight"><div class="label">Tid per enhet</div>
-          <div class="val"><span id="perUnit">–</span></div><div class="sub">snitt i körningen</div></div>
+          <div class="val"><span id="perUnit">–</span></div><div class="sub">snitt i sekvensen</div></div>
         <div class="card stat"><div class="label">Effektiv tid</div>
           <div class="val"><span id="effTime">–</span></div><div class="sub" id="effSub"></div></div>
         <div class="card stat"><div class="label">Beräknat klart</div>
@@ -479,8 +505,8 @@
     skift: null,
     linje: store.get('linje', null),
     skiftNamn: store.get('skiftNamn', null),
-    typ: store.get('typ', null),
-    storlek: store.get('storlek', null),
+    typ: null,
+    storlek: null,
     sound: store.get('sound', true),
     queue: Promise.resolve(),
     busy: 0,       // registreringar som väntar på servern
@@ -633,10 +659,10 @@
 
   function renderPicker() {
     const typer = state.config.maskintyper;
-    if (!typer.some((t) => t.namn === state.typ)) state.typ = typer[0]?.namn ?? null;
+    // Inget förval: operatören väljer maskintyp och storlek för varje sekvens.
+    if (!typer.some((t) => t.namn === state.typ)) state.typ = null;
     const typ = typer.find((t) => t.namn === state.typ);
-    if (!typ?.storlekar.includes(state.storlek)) state.storlek = typ?.storlekar[0] ?? null;
-    store.set('typ', state.typ); store.set('storlek', state.storlek);
+    if (!typ?.storlekar.includes(state.storlek)) state.storlek = null;
 
     $('types').innerHTML = typer.length
       ? typer.map((t) => `<button type="button" data-typ="${esc(t.namn)}" class="${t.namn === state.typ ? 'on' : ''}">${esc(t.namn)}</button>`).join('')
@@ -647,6 +673,8 @@
           : `<span class="none">Inga storlekar för ${esc(typ.namn)}</span>`)
       : '';
     $('startBtn').disabled = !(state.typ && state.storlek && state.skift);
+    if (typ && !typ.storlekar.length) $('sizes').innerHTML = `<span class="none">Inga storlekar för ${esc(typ.namn)}</span>`;
+    else if (!typ) $('sizes').innerHTML = '<span class="none">Välj maskintyp</span>';
   }
 
   $('types').onclick = (e) => {
@@ -676,9 +704,22 @@
     try {
       state.skift = await post(`/api/skift/${state.skift.id}/korningar`, { typ: state.typ, storlek: state.storlek, sekvensnr });
       $('seq').value = '';
+      state.typ = null;
+      state.storlek = null;
       render();
       beep(660, 0.1);
-      toast(`Körning startad: ${state.typ} ${state.storlek} · ${sekvensnr}`);
+      const k = state.skift.korning;
+      toast(`Sekvens ${k.sekvensnr} startad: ${k.typ} ${k.storlek}`);
+    } catch (err) { toast(err.message, true); }
+  };
+
+  $('undoLast').onclick = async () => {
+    const senast = state.skift?.korningar[0];
+    if (!senast) return;
+    try {
+      state.skift = await post(`/api/korningar/${senast.id}/angra`);
+      render();
+      toast(`Sekvens ${senast.sekvensnr} öppnad igen – en radenhet borttagen`);
     } catch (err) { toast(err.message, true); }
   };
 
@@ -686,8 +727,8 @@
     const k = state.skift?.korning;
     if (!k) return;
     const antal = k.antal + state.optimistic;
-    const ok = await confirmBox('Avsluta körningen?',
-      `${k.typ} ${k.storlek} · sekvens ${k.sekvensnr}: ${antal} radenheter. Körningen sparas och du kan starta en ny.`, 'Avsluta');
+    const ok = await confirmBox('Avsluta sekvensen tidigt?',
+      `${k.typ} ${k.storlek} · sekvens ${k.sekvensnr}: ${antal} av ${k.storlek} radenheter. Sekvensen sparas och du kan starta nästa.`, 'Avsluta');
     if (!ok) return;
     try {
       await state.queue;
@@ -718,7 +759,23 @@
       $('runSeq').textContent = k.sekvensnr;
       $('runStart').textContent = hhmm(k.start);
       $('big').textContent = antal;
+      $('bigOf').textContent = k.storlek;
+      $('seqLeft').textContent = Math.max(0, k.storlek - antal);
+      $('seqPct').textContent = Math.round((antal / k.storlek) * 100) + '%';
+      $('seqBar').firstElementChild.style.width = Math.min(100, (antal / k.storlek) * 100) + '%';
       $('minus').disabled = antal <= 0;
+      $('plus').disabled = antal >= k.storlek;
+    }
+
+    // Senast klara sekvens visas ovanför rutan för nästa sekvens.
+    const senast = !k && s.korningar[0];
+    const klar = senast && senast.antal >= senast.storlek;
+    $('doneBanner').hidden = !klar;
+    $('startLabel').textContent = klar ? 'Nästa sekvens' : 'Starta körning';
+    if (klar) {
+      const t = effektivTid(new Date(senast.start).getTime(), new Date(senast.slut).getTime());
+      $('doneTitle').textContent = `Sekvens ${senast.sekvensnr} klar`;
+      $('doneSub').textContent = `${senast.typ} ${senast.storlek} · ${senast.antal} radenheter · ${langd(t.effektiv / senast.antal)} per enhet`;
     }
     $('pct').textContent = pct + '%';
     $('shiftTotal').textContent = total;
@@ -815,6 +872,8 @@
     const k = s?.korning;
     if (!k) return;
     if (antal < 0 && k.antal + state.optimistic + antal < 0) return;
+    if (antal > 0 && k.antal + state.optimistic + antal > k.storlek) return;
+    const sekvensKlar = k.antal + state.optimistic + antal === k.storlek;
     const fore = s.total + state.optimistic;
     state.busy++;
     state.optimistic += antal;
@@ -822,6 +881,7 @@
     bump();
     beep(antal > 0 ? 880 : 440);
     if (navigator.vibrate) navigator.vibrate(10);
+    if (sekvensKlar) setTimeout(() => { beep(988, 0.1); setTimeout(() => beep(1319, 0.2), 120); }, 80);
     if (s.mal > 0 && fore < s.mal && fore + antal >= s.mal) {
       setTimeout(() => { beep(1175, 0.12); setTimeout(() => beep(1568, 0.18), 130); }, 90);
       toast('Skiftmålet uppnått! 🎉');
@@ -843,7 +903,7 @@
   }
 
   function bump() {
-    const b = $('big');
+    const b = $('big').parentElement;
     b.classList.add('bump');
     setTimeout(() => b.classList.remove('bump'), 110);
   }
