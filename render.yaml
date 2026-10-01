@@ -12,8 +12,6 @@ services:
         fromDatabase:
           name: radenhetsraknare-db
           property: connectionString
-      - key: API_KEY
-        generateValue: true
       - key: NODE_VERSION
         value: "22"
 

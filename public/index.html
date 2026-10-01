@@ -2,174 +2,794 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Radenhetsräknare</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produktion: Radenheter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='16' fill='white' text-anchor='middle'%3E+1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f6f8; --card: #fff; --text: #1d2433; --muted: #6b7385;
-    --border: #dde1e8; --accent: #2457d6; --accent-text: #fff; --danger: #c23b3b;
+    --bg: #eef2f7;
+    --surface: #ffffff;
+    --surface-2: #f1f4f9;
+    --text: #0f172a;
+    --muted: #64748b;
+    --faint: #94a3b8;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-2: #1d4ed8;
+    --accent-soft: #dbeafe;
+    --ok: #059669;
+    --ok-soft: #d1fae5;
+    --danger: #e11d48;
+    --danger-soft: #fff1f2;
+    --danger-border: #fecdd3;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 2px 12px rgba(15, 23, 42, .05);
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #12151b; --card: #1b1f27; --text: #e7e9ee; --muted: #9aa2b2;
-      --border: #2d333f; --accent: #5b8cff; --accent-text: #0b1020; --danger: #ff7a7a;
+    :root:not([data-theme="light"]) {
+      --bg: #0b1120; --surface: #111a2e; --surface-2: #17223a; --text: #e8edf6; --muted: #94a3b8;
+      --faint: #64748b; --border: #1f2b44; --accent: #3b82f6; --accent-2: #60a5fa; --accent-soft: #172a52;
+      --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25); color-scheme: dark;
     }
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 1.5rem; margin: 0 0 20px; }
-  h2 { font-size: 1.05rem; margin: 0 0 12px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px; margin-bottom: 16px; }
-  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
-  input, select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
-  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-  .types { display: flex; gap: 8px; margin-bottom: 12px; }
-  .types button { flex: 1; }
-  button { font: inherit; padding: 10px 14px; border-radius: 8px; cursor: pointer;
-    border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-  button.primary, .types button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-  button.danger { color: var(--danger); }
-  .actions { display: flex; gap: 8px; }
-  .actions button { flex: 1; }
-  .totals { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
-    padding: 4px 12px; font-size: .9rem; }
-  .pill b { font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-  th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
-  th { font-size: .8rem; color: var(--muted); font-weight: 600; }
-  td.num { text-align: right; font-weight: 600; }
-  th.num { text-align: right; }
-  .msg { min-height: 1.4em; margin-top: 10px; font-size: .9rem; }
-  .msg.err { color: var(--danger); }
-  .empty { color: var(--muted); }
-  .hidden { display: none; }
-  .small { font-size: .85rem; color: var(--muted); }
+  :root[data-theme="dark"] {
+    --bg: #0b1120; --surface: #111a2e; --surface-2: #17223a; --text: #e8edf6; --muted: #94a3b8;
+    --faint: #64748b; --border: #1f2b44; --accent: #3b82f6; --accent-2: #60a5fa; --accent-soft: #172a52;
+    --ok: #34d399; --ok-soft: #0c2e25; --danger: #fb7185; --danger-soft: #2a1220; --danger-border: #4c1d2e;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25); color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.45 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  svg { display: block; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 12px 16px 32px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); }
+
+  /* ---------- Header ---------- */
+  header.card { display: flex; align-items: center; gap: 14px; padding: 16px 20px; flex-wrap: wrap; }
+  .logo { width: 48px; height: 48px; border-radius: 13px; flex: none; display: grid; place-items: center; color: #fff;
+    background: linear-gradient(140deg, #3b82f6, #1d4ed8); box-shadow: 0 6px 16px rgba(37, 99, 235, .35); }
+  .logo svg { width: 24px; height: 24px; }
+  .title { min-width: 0; }
+  .title h1 { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .title p { margin: 2px 0 0; color: var(--muted); font-size: .92rem; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; padding: 2px 10px;
+    border-radius: 999px; background: var(--ok-soft); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent); }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .badge.off { background: var(--danger-soft); color: var(--danger); border-color: var(--danger-border); }
+  .controls { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .icons { display: flex; gap: 8px; }
+  select, .icon-btn { height: 42px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+  select { padding: 0 34px 0 12px; font-weight: 600; appearance: none; max-width: 230px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; }
+  .icon-btn { width: 42px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); transition: color .15s, background .15s; }
+  .icon-btn:hover { color: var(--text); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn.on { color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- Layout ---------- */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; margin-top: 16px; align-items: start; }
+  .side { position: sticky; top: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+
+  /* ---------- Räknare ---------- */
+  .counter { padding: 20px 24px 22px; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .label { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+  .clock { font-family: var(--mono); font-size: .8rem; color: var(--faint); }
+  .inner { max-width: 600px; margin: 0 auto; }
+
+  .picker { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .seg button { border: 1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding: 7px 16px; font-weight: 700;
+    transition: background .15s, color .15s, border-color .15s; }
+  .seg.sizes button { font-family: var(--mono); font-weight: 700; min-width: 54px; padding: 6px 12px; }
+  .seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg .none { color: var(--faint); font-size: .9rem; padding: 6px 0; }
+
+  .big { text-align: center; font-family: var(--mono); font-weight: 800; color: var(--accent); font-size: clamp(5rem, 15vw, 8.5rem);
+    line-height: 1; margin: 22px 0 18px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; transition: transform .12s ease; }
+  .big.bump { transform: scale(1.06); }
+  .big.done { color: var(--ok); }
+
+  .progress-meta { display: flex; justify-content: space-between; font-size: .9rem; color: var(--muted); margin-bottom: 8px; }
+  .progress-meta b { color: var(--text); }
+  .progress-meta .left b { color: var(--accent); }
+  .bar { height: 12px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+  .bar > div { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #3b82f6, #2563eb); transition: width .35s ease; }
+  .bar.done > div { background: linear-gradient(90deg, #10b981, #059669); }
+
+  .actions { display: grid; grid-template-columns: 1fr 2.2fr 1fr; gap: 14px; margin-top: 26px; }
+  .act { height: 72px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 800; font-size: 1.25rem;
+    transition: transform .07s, background .15s, opacity .15s; user-select: none; }
+  .act:active:not(:disabled) { transform: scale(.97); }
+  .act:disabled { opacity: .45; cursor: not-allowed; }
+  .act.main { background: var(--accent); border-color: var(--accent); color: #fff; font-size: 1.45rem; letter-spacing: .01em;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, .3); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+  .act.main:hover:not(:disabled) { background: var(--accent-2); }
+  .act.main small { font-size: .78rem; font-weight: 600; opacity: .8; font-family: var(--mono); letter-spacing: 0; }
+  .hint { text-align: center; color: var(--faint); font-size: .82rem; margin-top: 14px; }
+  kbd { font-family: var(--mono); font-size: .75rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--muted); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+  .stat { padding: 16px; min-height: 96px; }
+  .stat .val { font-family: var(--mono); font-size: 1.35rem; font-weight: 700; margin-top: 10px; display: flex; align-items: baseline; gap: 6px; }
+  .stat .val small { font-family: Inter, sans-serif; font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .stat input { width: 84px; height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
+    font-family: var(--mono); font-size: 1.35rem; font-weight: 700; padding: 0 10px; }
+  .stat input:focus, .field input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+  .breakdown { padding: 18px 20px; margin-top: 16px; }
+  .bd-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px 24px; margin-top: 12px; }
+  .bd { display: grid; grid-template-columns: 80px 1fr 36px; align-items: center; gap: 10px; font-size: .9rem; }
+  .bd .name { font-family: var(--mono); font-weight: 700; }
+  .bd .mini { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .bd .mini div { height: 100%; background: var(--accent); border-radius: 99px; }
+  .bd .n { font-family: var(--mono); font-weight: 700; text-align: right; }
+  .muted-empty { color: var(--faint); font-style: italic; font-size: .9rem; margin-top: 10px; }
+
+  /* ---------- Logg ---------- */
+  .log-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .log-head h2 { margin: 0; font-size: 1.05rem; font-weight: 700; }
+  .pill { font-family: var(--mono); font-size: .72rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; color: var(--muted); }
+  .log { list-style: none; margin: 0; padding: 6px 12px; overflow-y: auto; flex: 1; min-height: 260px; }
+  .log li { display: grid; grid-template-columns: 74px 46px 1fr; align-items: center; gap: 8px; padding: 9px 8px; border-radius: 10px; font-size: .9rem; }
+  .log li + li { border-top: 1px dashed var(--border); }
+  .log li.new { animation: flash 1s ease; }
+  @keyframes flash { from { background: var(--accent-soft); } to { background: transparent; } }
+  .log time { font-family: var(--mono); color: var(--faint); font-size: .82rem; }
+  .delta { font-family: var(--mono); font-weight: 800; font-size: .82rem; text-align: center; border-radius: 6px; padding: 2px 0; background: var(--ok-soft); color: var(--ok); }
+  .delta.neg { background: var(--danger-soft); color: var(--danger); }
+  .log .m { font-family: var(--mono); font-weight: 600; }
+  .log .empty { display: block; text-align: center; color: var(--faint); font-style: italic; padding: 40px 0; border: 0; }
+  .log-foot { padding: 14px 20px 18px; border-top: 1px solid var(--border); }
+  .reset { width: 100%; height: 44px; border-radius: 12px; border: 1px solid var(--danger-border); background: var(--danger-soft); color: var(--danger);
+    font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .reset svg { width: 16px; height: 16px; }
+  .reset:hover { filter: brightness(.97); }
+
+  /* ---------- Inställningar ---------- */
+  dialog { border: 0; padding: 0; background: transparent; color: var(--text); max-width: none; max-height: none; }
+  dialog::backdrop { background: rgba(2, 6, 23, .45); backdrop-filter: blur(2px); }
+  dialog.drawer { position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; width: min(460px, 100%); }
+  .drawer-inner { height: 100%; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+  .drawer-head { display: flex; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--border); }
+  .drawer-head h2 { margin: 0; font-size: 1.15rem; }
+  .drawer-head .icon-btn { margin-left: auto; }
+  .drawer-body { overflow-y: auto; padding: 20px; flex: 1; }
+  .section + .section { margin-top: 28px; }
+  .section h3 { margin: 0 0 4px; font-size: 1rem; }
+  .section .sub { margin: 0 0 12px; color: var(--muted); font-size: .88rem; }
+  .field { display: flex; gap: 8px; }
+  .field input { flex: 1; min-width: 0; height: 42px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); padding: 0 12px; }
+  .btn { height: 42px; border: 0; border-radius: 10px; padding: 0 16px; background: var(--accent); color: #fff; font-weight: 700; white-space: nowrap; }
+  .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .btn.danger { background: var(--danger); }
+  .item { border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 10px; background: var(--surface); }
+  .item-head { display: flex; align-items: center; gap: 8px; }
+  .item-head input { flex: 1; min-width: 0; height: 38px; border: 1px solid transparent; border-radius: 8px; background: transparent; padding: 0 8px; font-weight: 600; }
+  .item-head input:hover { border-color: var(--border); }
+  .item-head input:focus { outline: 2px solid var(--accent); background: var(--surface-2); }
+  .item-head strong { font-family: var(--mono); font-size: 1.05rem; flex: 1; padding-left: 4px; }
+  .del { width: 36px; height: 36px; border-radius: 8px; border: 0; background: transparent; color: var(--faint); display: grid; place-items: center; flex: none; }
+  .del:hover { background: var(--danger-soft); color: var(--danger); }
+  .del svg { width: 16px; height: 16px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .chip { display: inline-flex; align-items: center; gap: 2px; font-family: var(--mono); font-weight: 700; font-size: .88rem; padding: 4px 4px 4px 10px;
+    border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .chip button { width: 22px; height: 22px; border: 0; background: transparent; border-radius: 50%; color: inherit; display: grid; place-items: center; padding: 0; opacity: .7; }
+  .chip button:hover { opacity: 1; background: color-mix(in srgb, var(--accent) 15%, transparent); }
+  .chip svg { width: 12px; height: 12px; }
+  .item .field input { height: 38px; }
+  .item .btn { height: 38px; font-size: .9rem; }
+
+  dialog.confirm { margin: auto; }
+  .confirm-inner { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 22px; width: min(400px, calc(100vw - 32px)); }
+  .confirm-inner h3 { margin: 0 0 6px; }
+  .confirm-inner p { margin: 0 0 18px; color: var(--muted); }
+  .confirm-inner form { display: flex; justify-content: flex-end; gap: 8px; }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 16px); background: var(--text); color: var(--surface);
+    padding: 11px 18px; border-radius: 12px; font-weight: 600; font-size: .9rem; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100% - 32px); box-shadow: 0 10px 30px rgba(0,0,0,.2); }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { background: var(--danger); color: #fff; }
+
+  /* ---------- Responsivt ---------- */
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    .side { position: static; max-height: none; }
+    .log { max-height: 420px; }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 8px 10px 24px; }
+    header.card { padding: 14px; position: relative; }
+    .title { padding-right: 0; }
+    .title h1 { font-size: 1.1rem; }
+    .logo { width: 42px; height: 42px; }
+    .icons { position: absolute; top: 14px; right: 14px; gap: 6px; }
+    .icons .icon-btn { width: 38px; height: 38px; }
+    .controls { margin-left: 0; width: 100%; display: grid; grid-template-columns: 1.5fr 1fr; }
+    .controls select { min-width: 0; max-width: none; width: 100%; font-size: .9rem; padding-right: 30px; }
+    .counter { padding: 16px; }
+    .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .actions { gap: 10px; }
+    .act { height: 64px; font-size: 1.1rem; }
+    .act.main { font-size: 1.15rem; }
+    .hint { display: none; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>Radenhetsräknare</h1>
-
-  <section class="card hidden" id="login">
-    <h2>Logga in</h2>
-    <label for="key">API-nyckel (finns under Environment → API_KEY i Render)</label>
-    <input id="key" type="password" autocomplete="current-password">
-    <div class="actions" style="margin-top:12px"><button class="primary" id="saveKey">Spara</button></div>
-    <div class="msg err" id="loginMsg"></div>
-  </section>
-
-  <div id="app" class="hidden">
-    <section class="card">
-      <h2>Registrera maskin</h2>
-      <div class="types" id="types">
-        <button data-typ="TPV" class="on">TPV</button>
-        <button data-typ="TPT">TPT</button>
-        <button data-typ="TPL">TPL</button>
+<div class="wrap">
+  <header class="card">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="title">
+      <h1>PRODUKTION: RADENHETER <span class="badge" id="status">I drift</span></h1>
+      <p>Realtidsräknare för montage &amp; avsyning</p>
+    </div>
+    <div class="controls">
+      <select id="linje" aria-label="Linje"></select>
+      <select id="skift" aria-label="Skift"></select>
+      <div class="icons">
+      <button class="icon-btn" id="sound" aria-label="Ljud" title="Ljud av/på"></button>
+      <button class="icon-btn" id="theme" aria-label="Mörkt läge" title="Ljust/mörkt läge"></button>
+      <button class="icon-btn" id="openSettings" aria-label="Inställningar" title="Inställningar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+      </button>
       </div>
-      <div class="row">
-        <div><label for="storlek">Storlek</label><input id="storlek" type="number" min="1" step="1" inputmode="numeric" placeholder="t.ex. 12"></div>
-        <div><label for="antal">Antal</label><input id="antal" type="number" min="1" step="1" inputmode="numeric" value="1"></div>
-        <div style="display:flex;align-items:end"><button class="primary" id="add" style="width:100%;white-space:nowrap">+ Lägg till</button></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <section class="card counter">
+        <div class="row-between">
+          <span class="label">Färdigställda radenheter</span>
+          <span class="clock" id="clock">--:--:--</span>
+        </div>
+        <div class="inner">
+          <div class="picker">
+            <div class="seg" id="types"></div>
+            <div class="seg sizes" id="sizes"></div>
+          </div>
+          <div class="big" id="big">0</div>
+          <div class="progress-meta">
+            <span>Framsteg mot mål: <b id="pct">0%</b></span>
+            <span class="left" id="left"></span>
+          </div>
+          <div class="bar" id="bar"><div></div></div>
+          <div class="actions">
+            <button class="act" id="minus">−1</button>
+            <button class="act main" id="plus">+1 RADENHET<small id="plusMachine"></small></button>
+            <button class="act" id="plus5">+5</button>
+          </div>
+          <div class="hint">Klicka på <kbd>+1</kbd> eller tryck på <kbd>Mellanslag</kbd> på tangentbordet. <kbd>−</kbd> ångrar en.</div>
+        </div>
+      </section>
+
+      <div class="stats">
+        <div class="card stat"><div class="label">Mål (skift)</div>
+          <div class="val"><input id="mal" type="number" min="0" inputmode="numeric"><small>st</small></div></div>
+        <div class="card stat"><div class="label">Takt (snitt)</div>
+          <div class="val"><span id="takt">0</span><small>enheter/h</small></div></div>
+        <div class="card stat"><div class="label">Beräknat klart</div>
+          <div class="val"><span id="eta">--:--</span></div></div>
+        <div class="card stat"><div class="label">Skiftstart</div>
+          <div class="val"><span id="start">--:--</span></div></div>
       </div>
-      <div class="actions"><button id="remove">− Ta bort</button></div>
-      <div class="msg" id="msg"></div>
-    </section>
 
-    <section class="card">
-      <h2>Räknare</h2>
-      <div class="totals" id="totals"></div>
-      <table>
-        <thead><tr><th>Typ</th><th>Storlek</th><th class="num">Antal</th><th></th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </section>
+      <section class="card breakdown">
+        <span class="label">Per maskin detta skift</span>
+        <div id="breakdown"></div>
+      </section>
+    </main>
 
-    <p class="small"><button id="logout">Logga ut</button></p>
+    <aside class="card side">
+      <div class="log-head"><h2>Aktivitetslogg</h2><span class="pill" id="logCount">0 händelser</span></div>
+      <ul class="log" id="log"></ul>
+      <div class="log-foot">
+        <button class="reset" id="reset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          Nollställ inför nytt skift
+        </button>
+      </div>
+    </aside>
   </div>
-</main>
+</div>
+
+<dialog class="drawer" id="settings">
+  <div class="drawer-inner">
+    <div class="drawer-head">
+      <h2>Inställningar</h2>
+      <button class="icon-btn" id="closeSettings" aria-label="Stäng">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="section">
+        <h3>Maskiner</h3>
+        <p class="sub">Maskintyper och deras storlekar. Visas som val ovanför räknaren.</p>
+        <form class="field" id="addType">
+          <input placeholder="Ny maskintyp, t.ex. TPV" maxlength="20" autocomplete="off" autocapitalize="characters">
+          <button class="btn">Lägg till</button>
+        </form>
+        <div id="typeList"></div>
+      </div>
+      <div class="section">
+        <h3>Linjer</h3>
+        <p class="sub">Dina flöden. Klicka på namnet för att byta namn.</p>
+        <form class="field" id="addLine">
+          <input placeholder="Ny linje, t.ex. Linje 3" maxlength="40" autocomplete="off">
+          <button class="btn">Lägg till</button>
+        </form>
+        <div id="lineList"></div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="confirm" id="confirm">
+  <div class="confirm-inner">
+    <h3 id="cTitle"></h3>
+    <p id="cText"></p>
+    <form method="dialog">
+      <button class="btn ghost" value="nej">Avbryt</button>
+      <button class="btn danger" value="ja" id="cOk"></button>
+    </form>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
 
 <script>
   const $ = (id) => document.getElementById(id);
-  let typ = 'TPV';
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  const hhmm = (d) => new Date(d).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+  const hhmmss = (d) => new Date(d).toLocaleTimeString('sv-SE');
 
-  function getKey() { try { return localStorage.getItem('apiKey') || ''; } catch { return ''; } }
-  function setKey(k) { try { k ? localStorage.setItem('apiKey', k) : localStorage.removeItem('apiKey'); } catch {} }
+  const ICON = {
+    soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
+    soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="m22 9-6 6M16 9l6 6"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
+    sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+  };
 
+  const state = {
+    config: { linjer: [], maskintyper: [], skift: [] },
+    skift: null,
+    linje: store.get('linje', null),
+    skiftNamn: store.get('skiftNamn', null),
+    typ: store.get('typ', null),
+    storlek: store.get('storlek', null),
+    sound: store.get('sound', true),
+    queue: Promise.resolve(),
+    busy: 0,      // antal registreringar som väntar på servern
+    optimistic: 0, // summa av väntande registreringar
+    pendingMaskin: {}, // väntande registreringar per maskin
+    lastLogId: 0,
+  };
+
+  // ---------- API ----------
   async function api(path, opts = {}) {
-    const res = await fetch(path, {
-      ...opts,
-      headers: { 'content-type': 'application/json', 'x-api-key': getKey(), ...(opts.headers || {}) },
-    });
-    if (res.status === 401) { showLogin('Fel API-nyckel'); throw new Error('401'); }
-    const data = res.status === 204 ? null : await res.json();
-    if (!res.ok) throw new Error(data?.fel || `Fel ${res.status}`);
+    let res;
+    try {
+      res = await fetch(path, { ...opts, headers: { 'content-type': 'application/json' } });
+    } catch {
+      setOnline(false);
+      throw new Error('Ingen kontakt med servern');
+    }
+    setOnline(true);
+    const data = res.status === 204 ? null : await res.json().catch(() => null);
+    if (!res.ok) throw new Error(data?.fel || `Något gick fel (${res.status})`);
     return data;
   }
+  const post = (p, body) => api(p, { method: 'POST', body: JSON.stringify(body || {}) });
+  const patch = (p, body) => api(p, { method: 'PATCH', body: JSON.stringify(body || {}) });
+  const del = (p) => api(p, { method: 'DELETE' });
 
-  function showLogin(err = '') {
-    $('app').classList.add('hidden');
-    $('login').classList.remove('hidden');
-    $('loginMsg').textContent = err;
+  function setOnline(on) {
+    const s = $('status');
+    s.textContent = on ? 'I drift' : 'Offline';
+    s.classList.toggle('off', !on);
   }
 
-  function showMsg(text, err = false) {
-    $('msg').textContent = text;
-    $('msg').className = 'msg' + (err ? ' err' : '');
+  let toastTimer;
+  function toast(text, err = false) {
+    const t = $('toast');
+    t.textContent = text;
+    t.className = 'toast show' + (err ? ' err' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (t.className = 'toast'), 2800);
   }
 
-  async function load() {
-    const data = await api('/api/raknare');
-    $('login').classList.add('hidden');
-    $('app').classList.remove('hidden');
-
-    const totals = Object.entries(data.perTyp).map(([t, n]) => `<span class="pill">${t}: <b>${n}</b></span>`);
-    totals.push(`<span class="pill">Totalt: <b>${data.totalt}</b></span>`);
-    $('totals').innerHTML = totals.join('');
-
-    $('rows').innerHTML = data.raknare.length
-      ? data.raknare.map((r) => `<tr><td>${r.typ}</td><td>${r.storlek}</td><td class="num">${r.antal}</td>
-          <td style="text-align:right"><button class="danger" data-reset="${r.typ}/${r.storlek}">Nollställ</button></td></tr>`).join('')
-      : '<tr><td colspan="4" class="empty">Inga maskiner registrerade än</td></tr>';
+  function confirmBox(title, text, ok) {
+    $('cTitle').textContent = title;
+    $('cText').textContent = text;
+    $('cOk').textContent = ok;
+    const d = $('confirm');
+    d.returnValue = '';
+    d.showModal();
+    return new Promise((r) => d.addEventListener('close', () => r(d.returnValue === 'ja'), { once: true }));
   }
 
-  async function change(path, verb) {
-    const storlek = $('storlek').value;
-    const antal = $('antal').value || 1;
-    if (!storlek) return showMsg('Ange en storlek', true);
+  // ---------- Ljud ----------
+  let audio;
+  function beep(freq = 880, dur = 0.07) {
+    if (!state.sound) return;
     try {
-      const r = await api(path, { method: 'POST', body: JSON.stringify({ typ, storlek: Number(storlek), antal: Number(antal) }) });
-      showMsg(`${verb} – ${r.typ} ${r.storlek}: ${r.antal} st`);
-      await load();
-    } catch (e) { if (e.message !== '401') showMsg(e.message, true); }
+      audio ||= new (window.AudioContext || window.webkitAudioContext)();
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = freq; o.type = 'sine';
+      g.gain.setValueAtTime(0.15, audio.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+      o.connect(g).connect(audio.destination);
+      o.start(); o.stop(audio.currentTime + dur);
+    } catch {}
+  }
+  function renderSoundBtn() {
+    $('sound').innerHTML = state.sound ? ICON.soundOn : ICON.soundOff;
+    $('sound').classList.toggle('on', state.sound);
+  }
+  $('sound').onclick = () => { state.sound = !state.sound; store.set('sound', state.sound); renderSoundBtn(); beep(); };
+
+  // ---------- Tema ----------
+  function isDark() {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function renderThemeBtn() { $('theme').innerHTML = isDark() ? ICON.sun : ICON.moon; }
+  const savedTheme = store.get('theme', null);
+  if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+  $('theme').onclick = () => {
+    const t = isDark() ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    store.set('theme', t);
+    renderThemeBtn();
+  };
+
+  // ---------- Val av linje/skift/maskin ----------
+  function skiftEfterKlockan() {
+    const h = new Date().getHours();
+    return h >= 6 && h < 14 ? 'Förmiddag' : h >= 14 && h < 22 ? 'Eftermiddag' : 'Natt';
   }
 
-  $('types').addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-typ]');
+  function renderSelects() {
+    const { linjer, skift } = state.config;
+    if (!linjer.some((l) => l.id === state.linje)) state.linje = linjer[0]?.id ?? null;
+    if (!skift.includes(state.skiftNamn)) state.skiftNamn = skiftEfterKlockan();
+    $('linje').innerHTML = linjer.map((l) => `<option value="${l.id}">${esc(l.namn)}</option>`).join('');
+    $('linje').value = state.linje ?? '';
+    $('skift').innerHTML = skift.map((s) => `<option>${esc(s)}</option>`).join('');
+    $('skift').value = state.skiftNamn;
+  }
+
+  function renderPicker() {
+    const typer = state.config.maskintyper;
+    if (!typer.some((t) => t.namn === state.typ)) state.typ = typer[0]?.namn ?? null;
+    const typ = typer.find((t) => t.namn === state.typ);
+    if (!typ?.storlekar.includes(state.storlek)) state.storlek = typ?.storlekar[0] ?? null;
+    store.set('typ', state.typ); store.set('storlek', state.storlek);
+
+    $('types').innerHTML = typer.length
+      ? typer.map((t) => `<button data-typ="${esc(t.namn)}" class="${t.namn === state.typ ? 'on' : ''}">${esc(t.namn)}</button>`).join('')
+      : '<span class="none">Inga maskiner – lägg till under Inställningar</span>';
+    $('sizes').innerHTML = typ
+      ? (typ.storlekar.length
+          ? typ.storlekar.map((s) => `<button data-storlek="${s}" class="${s === state.storlek ? 'on' : ''}">${s}</button>`).join('')
+          : '<span class="none">Inga storlekar för ' + esc(typ.namn) + '</span>')
+      : '';
+    $('plusMachine').textContent = state.typ && state.storlek ? `${state.typ} ${state.storlek}` : 'välj maskin';
+    renderButtons();
+  }
+
+  $('types').onclick = (e) => {
+    const b = e.target.closest('[data-typ]');
     if (!b) return;
-    typ = b.dataset.typ;
-    for (const x of $('types').children) x.classList.toggle('on', x === b);
+    state.typ = b.dataset.typ;
+    state.storlek = null;
+    renderPicker();
+  };
+  $('sizes').onclick = (e) => {
+    const b = e.target.closest('[data-storlek]');
+    if (!b) return;
+    state.storlek = Number(b.dataset.storlek);
+    renderPicker();
+  };
+  $('linje').onchange = () => { state.linje = Number($('linje').value); store.set('linje', state.linje); loadSkift(); };
+  $('skift').onchange = () => { state.skiftNamn = $('skift').value; store.set('skiftNamn', state.skiftNamn); loadSkift(); };
+
+  // ---------- Skift ----------
+  function antalFor(typ, storlek) {
+    const sparat = state.skift?.perMaskin.find((m) => m.typ === typ && m.storlek === storlek)?.antal || 0;
+    return sparat + (state.pendingMaskin[`${typ}|${storlek}`] || 0);
+  }
+
+  function renderButtons() {
+    const ready = !!(state.skift && state.typ && state.storlek);
+    $('plus').disabled = !ready;
+    $('plus5').disabled = !ready;
+    $('minus').disabled = !ready || antalFor(state.typ, state.storlek) <= 0;
+  }
+
+  function renderSkift() {
+    const s = state.skift;
+    if (!s) return;
+    const total = s.total + state.optimistic;
+    const mal = s.mal;
+    const pct = mal > 0 ? Math.min(100, Math.round((total / mal) * 100)) : 0;
+    const done = mal > 0 && total >= mal;
+
+    $('big').textContent = total;
+    $('big').classList.toggle('done', done);
+    $('pct').textContent = pct + '%';
+    $('bar').firstElementChild.style.width = pct + '%';
+    $('bar').classList.toggle('done', done);
+    $('left').innerHTML = mal === 0 ? 'Inget mål satt' : done ? '<b style="color:var(--ok)">Mål uppnått ✓</b>' : `<b>${mal - total}</b> kvar till mål`;
+    if (document.activeElement !== $('mal')) $('mal').value = mal;
+    $('start').textContent = hhmm(s.start);
+    renderRate();
+
+    // Per maskin
+    const max = Math.max(1, ...s.perMaskin.map((m) => m.antal));
+    $('breakdown').innerHTML = s.perMaskin.length
+      ? `<div class="bd-list">${s.perMaskin.map((m) => `
+          <div class="bd"><span class="name">${esc(m.typ)} ${m.storlek}</span>
+            <div class="mini"><div style="width:${(m.antal / max) * 100}%"></div></div>
+            <span class="n">${m.antal}</span></div>`).join('')}</div>`
+      : '<div class="muted-empty">Inga registreringar ännu på detta skift.</div>';
+
+    // Logg
+    const n = s.handelser.length;
+    $('logCount').textContent = `${n}${n === 200 ? '+' : ''} händelse${n === 1 ? '' : 'r'}`;
+    $('log').innerHTML = n
+      ? s.handelser.map((h) => `<li class="${h.id > state.lastLogId && state.lastLogId ? 'new' : ''}">
+          <time>${hhmmss(h.tid)}</time>
+          <span class="delta ${h.antal < 0 ? 'neg' : ''}">${h.antal > 0 ? '+' : '−'}${Math.abs(h.antal)}</span>
+          <span class="m">${esc(h.typ)} ${h.storlek}</span></li>`).join('')
+      : '<li class="empty">Inga registreringar ännu på detta skift.</li>';
+    state.lastLogId = s.handelser[0]?.id || 0;
+    renderButtons();
+  }
+
+  function renderRate() {
+    const s = state.skift;
+    if (!s) return;
+    const total = s.total + state.optimistic;
+    const timmar = (Date.now() - new Date(s.start).getTime()) / 3.6e6;
+    const takt = timmar > 1 / 60 ? total / timmar : 0;
+    $('takt').textContent = takt >= 10 ? Math.round(takt) : takt.toFixed(1).replace('.', ',').replace(',0', '');
+    if (s.mal > 0 && total >= s.mal) $('eta').textContent = 'Klart ✓';
+    else if (takt > 0 && s.mal > 0) $('eta').textContent = hhmm(Date.now() + ((s.mal - total) / takt) * 3.6e6);
+    else $('eta').textContent = '--:--';
+  }
+
+  async function loadSkift() {
+    if (!state.linje || !state.skiftNamn) return;
+    const want = `${state.linje}|${state.skiftNamn}`;
+    try {
+      const s = await api(`/api/skift?linje=${state.linje}&skift=${encodeURIComponent(state.skiftNamn)}`);
+      if (want !== `${state.linje}|${state.skiftNamn}` || state.busy) return; // användaren bytte eller räknar just nu
+      if (s.id !== state.skift?.id) state.lastLogId = 0;
+      state.skift = s;
+      renderSkift();
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+
+  // Registreringar körs i tur och ordning så att räknaren alltid stämmer med servern.
+  function registrera(antal) {
+    const s = state.skift;
+    if (!s || !state.typ || !state.storlek) return;
+    if (antal < 0 && antalFor(state.typ, state.storlek) + antal < 0) {
+      return toast(`Inga ${state.typ} ${state.storlek} att ta bort`, true);
+    }
+    const body = { typ: state.typ, storlek: state.storlek, antal };
+    const mk = `${body.typ}|${body.storlek}`;
+    const fore = s.total + state.optimistic;
+    state.busy++;
+    state.optimistic += antal;
+    state.pendingMaskin[mk] = (state.pendingMaskin[mk] || 0) + antal;
+    renderSkift();
+    bump();
+    beep(antal > 0 ? 880 : 440);
+    if (navigator.vibrate) navigator.vibrate(10);
+    if (s.mal > 0 && fore < s.mal && fore + antal >= s.mal) {
+      setTimeout(() => { beep(1175, 0.12); setTimeout(() => beep(1568, 0.18), 130); }, 90);
+      toast('Mål uppnått! 🎉');
+    }
+
+    state.queue = state.queue.then(async () => {
+      try {
+        const ny = await post(`/api/skift/${s.id}/handelser`, body);
+        state.optimistic -= antal;
+        if (state.skift?.id === ny.id) state.skift = ny;
+      } catch (err) {
+        state.optimistic -= antal;
+        toast(err.message, true);
+      } finally {
+        state.pendingMaskin[mk] -= antal;
+        state.busy--;
+        renderSkift();
+      }
+    });
+  }
+
+  function bump() {
+    const b = $('big');
+    b.classList.add('bump');
+    setTimeout(() => b.classList.remove('bump'), 110);
+  }
+
+  $('plus').onclick = () => registrera(1);
+  $('plus5').onclick = () => registrera(5);
+  $('minus').onclick = () => registrera(-1);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest('input, select, textarea, dialog') || e.repeat) return;
+    if (e.code === 'Space') { e.preventDefault(); registrera(1); }
+    else if (e.key === '-' || e.code === 'NumpadSubtract') { e.preventDefault(); registrera(-1); }
+    else if (e.key === '+' || e.code === 'NumpadAdd') { e.preventDefault(); registrera(1); }
   });
-  $('add').onclick = () => change('/api/maskiner', 'Tillagd');
-  $('remove').onclick = () => change('/api/maskiner/ta-bort', 'Borttagen');
-  $('storlek').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('add').click(); });
 
-  $('rows').addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-reset]');
-    if (!b || !confirm(`Nollställ ${b.dataset.reset.replace('/', ' ')}?`)) return;
-    try { await api('/api/raknare/' + b.dataset.reset, { method: 'DELETE' }); await load(); }
-    catch (e) { if (e.message !== '401') showMsg(e.message, true); }
+  let malTimer;
+  $('mal').addEventListener('input', () => {
+    clearTimeout(malTimer);
+    malTimer = setTimeout(async () => {
+      const mal = Number($('mal').value);
+      if (!Number.isInteger(mal) || mal < 0 || !state.skift) return;
+      try {
+        state.skift = await patch(`/api/skift/${state.skift.id}`, { mal });
+        renderSkift();
+      } catch (err) { toast(err.message, true); }
+    }, 500);
   });
 
-  $('saveKey').onclick = () => { setKey($('key').value.trim()); load().catch(() => {}); };
-  $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('saveKey').click(); });
-  $('logout').onclick = () => { setKey(''); showLogin(); };
+  $('reset').onclick = async () => {
+    const s = state.skift;
+    if (!s) return;
+    const linje = state.config.linjer.find((l) => l.id === state.linje)?.namn;
+    const ok = await confirmBox('Nollställ inför nytt skift?',
+      `${linje}, ${s.namn}: ${s.total} radenheter sparas i historiken och ett nytt skift startar på 0.`, 'Nollställ');
+    if (!ok) return;
+    try {
+      await state.queue;
+      state.skift = await post(`/api/skift/${s.id}/nytt`);
+      state.lastLogId = 0;
+      renderSkift();
+      toast('Nytt skift startat');
+    } catch (err) { toast(err.message, true); }
+  };
 
-  load().catch((e) => { if (e.message !== '401') showLogin(e.message); });
+  // ---------- Inställningar ----------
+  function renderSettings() {
+    const { maskintyper, linjer } = state.config;
+    $('typeList').innerHTML = maskintyper.map((t) => `
+      <div class="item" data-typ="${esc(t.namn)}">
+        <div class="item-head"><strong>${esc(t.namn)}</strong>
+          <button class="del" data-del-type title="Ta bort ${esc(t.namn)}">${ICON.trash}</button></div>
+        <div class="chips">${t.storlekar.length
+          ? t.storlekar.map((s) => `<span class="chip">${s}<button data-del-size="${s}" title="Ta bort ${s}">${ICON.x}</button></span>`).join('')
+          : '<span class="muted-empty" style="margin:0">Inga storlekar än</span>'}</div>
+        <form class="field" data-add-size>
+          <input type="number" min="1" inputmode="numeric" placeholder="Ny storlek, t.ex. 12">
+          <button class="btn ghost">Lägg till</button>
+        </form>
+      </div>`).join('');
+    $('lineList').innerHTML = linjer.map((l) => `
+      <div class="item" data-linje="${l.id}">
+        <div class="item-head"><input value="${esc(l.namn)}" maxlength="40" aria-label="Namn på linje">
+          <button class="del" data-del-line title="Ta bort">${ICON.trash}</button></div>
+      </div>`).join('');
+  }
+
+  function applyConfig(cfg) {
+    state.config = cfg;
+    const linjeFore = state.linje;
+    renderSelects();
+    renderPicker();
+    renderSettings();
+    if (state.linje !== linjeFore || !state.skift) loadSkift();
+  }
+
+  $('openSettings').onclick = () => $('settings').showModal();
+  $('closeSettings').onclick = () => $('settings').close();
+  $('settings').addEventListener('click', (e) => { if (e.target === $('settings')) $('settings').close(); });
+
+  $('addType').onsubmit = async (e) => {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+    if (!input.value.trim()) return;
+    try {
+      applyConfig(await post('/api/maskintyper', { namn: input.value }));
+      input.value = '';
+      $('typeList').lastElementChild?.querySelector('input')?.focus();
+    } catch (err) { toast(err.message, true); }
+  };
+
+  $('typeList').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const typ = e.target.closest('[data-typ]').dataset.typ;
+    const input = e.target.querySelector('input');
+    if (!input.value) return;
+    try {
+      applyConfig(await post(`/api/maskintyper/${encodeURIComponent(typ)}/storlekar`, { storlek: Number(input.value) }));
+      $('typeList').querySelector(`[data-typ="${CSS.escape(typ)}"] input`)?.focus();
+    } catch (err) { toast(err.message, true); }
+  });
+
+  $('typeList').addEventListener('click', async (e) => {
+    const item = e.target.closest('[data-typ]');
+    if (!item) return;
+    const typ = item.dataset.typ;
+    if (e.target.closest('[data-del-type]')) {
+      if (!(await confirmBox(`Ta bort ${typ}?`, 'Typen och dess storlekar tas bort från valen. Gjorda registreringar finns kvar i loggen.', 'Ta bort'))) return;
+      try { applyConfig(await del(`/api/maskintyper/${encodeURIComponent(typ)}`)); } catch (err) { toast(err.message, true); }
+    }
+    const sz = e.target.closest('[data-del-size]');
+    if (sz) {
+      try { applyConfig(await del(`/api/maskintyper/${encodeURIComponent(typ)}/storlekar/${sz.dataset.delSize}`)); } catch (err) { toast(err.message, true); }
+    }
+  });
+
+  $('addLine').onsubmit = async (e) => {
+    e.preventDefault();
+    const input = e.target.querySelector('input');
+    if (!input.value.trim()) return;
+    try { applyConfig(await post('/api/linjer', { namn: input.value })); input.value = ''; }
+    catch (err) { toast(err.message, true); }
+  };
+
+  $('lineList').addEventListener('change', async (e) => {
+    const id = e.target.closest('[data-linje]')?.dataset.linje;
+    if (!id || !e.target.value.trim()) return;
+    try { applyConfig(await patch(`/api/linjer/${id}`, { namn: e.target.value })); toast('Namnet sparat'); }
+    catch (err) { toast(err.message, true); renderSettings(); }
+  });
+
+  $('lineList').addEventListener('click', async (e) => {
+    if (!e.target.closest('[data-del-line]')) return;
+    const id = Number(e.target.closest('[data-linje]').dataset.linje);
+    const namn = state.config.linjer.find((l) => l.id === id)?.namn;
+    if (!(await confirmBox(`Ta bort ${namn}?`, 'Linjen och alla dess skift och registreringar tas bort permanent.', 'Ta bort'))) return;
+    try {
+      if (state.linje === id) state.skift = null;
+      applyConfig(await del(`/api/linjer/${id}`));
+    } catch (err) { toast(err.message, true); }
+  });
+
+  // ---------- Start ----------
+  renderSoundBtn();
+  renderThemeBtn();
+  setInterval(() => {
+    $('clock').textContent = hhmmss(Date.now());
+    renderRate();
+  }, 1000);
+  $('clock').textContent = hhmmss(Date.now());
+  // Håll flera skärmar i synk.
+  setInterval(() => { if (!document.hidden && !state.busy) loadSkift(); }, 5000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) loadSkift(); });
+
+  api('/api/config').then(applyConfig).catch((err) => toast(err.message, true));
 </script>
 </body>
 </html>
