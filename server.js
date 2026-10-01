@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const { Pool } = require('pg');
 
@@ -49,6 +50,7 @@ function parseAntal(antalRaw) {
 
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/health', async (_req, res) => {
   try {

@@ -13,6 +13,10 @@ Litet API som räknar antal maskiner per **maskintyp** (`TPV`, `TPT`, `TPL`) och
 
 > Free-planen: webbtjänsten somnar efter inaktivitet (första anropet tar ~30–60 s), och free-databasen raderas efter 30 dagar. Byt `plan` i `render.yaml` till `starter` / `basic-256mb` för produktion.
 
+## Webbappen
+
+Öppna tjänstens adress (t.ex. `https://radenhetsraknare.onrender.com`) i webbläsaren eller mobilen. Första gången anger du API-nyckeln, sedan sparas den i webbläsaren. Välj maskintyp, skriv storlek och antal och tryck **+ Lägg till** eller **− Ta bort**. Tabellen visar alla räknare med summor per typ.
+
 ## API
 
 Alla `/api`-anrop kräver headern `x-api-key: <API_KEY>`. Maskintyp är skiftlägesokänslig.

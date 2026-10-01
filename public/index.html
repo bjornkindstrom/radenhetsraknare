@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radenhetsräknare</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #fff; --text: #1d2433; --muted: #6b7385;
+    --border: #dde1e8; --accent: #2457d6; --accent-text: #fff; --danger: #c23b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b1f27; --text: #e7e9ee; --muted: #9aa2b2;
+      --border: #2d333f; --accent: #5b8cff; --accent-text: #0b1020; --danger: #ff7a7a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 20px; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  input, select { width: 100%; padding: 10px 12px; font: inherit; color: var(--text);
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .types { display: flex; gap: 8px; margin-bottom: 12px; }
+  .types button { flex: 1; }
+  button { font: inherit; padding: 10px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+  button.primary, .types button.on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  .actions { display: flex; gap: 8px; }
+  .actions button { flex: 1; }
+  .totals { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pill { background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+    padding: 4px 12px; font-size: .9rem; }
+  .pill b { font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+  th { font-size: .8rem; color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-weight: 600; }
+  th.num { text-align: right; }
+  .msg { min-height: 1.4em; margin-top: 10px; font-size: .9rem; }
+  .msg.err { color: var(--danger); }
+  .empty { color: var(--muted); }
+  .hidden { display: none; }
+  .small { font-size: .85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Radenhetsräknare</h1>
+
+  <section class="card hidden" id="login">
+    <h2>Logga in</h2>
+    <label for="key">API-nyckel (finns under Environment → API_KEY i Render)</label>
+    <input id="key" type="password" autocomplete="current-password">
+    <div class="actions" style="margin-top:12px"><button class="primary" id="saveKey">Spara</button></div>
+    <div class="msg err" id="loginMsg"></div>
+  </section>
+
+  <div id="app" class="hidden">
+    <section class="card">
+      <h2>Registrera maskin</h2>
+      <div class="types" id="types">
+        <button data-typ="TPV" class="on">TPV</button>
+        <button data-typ="TPT">TPT</button>
+        <button data-typ="TPL">TPL</button>
+      </div>
+      <div class="row">
+        <div><label for="storlek">Storlek</label><input id="storlek" type="number" min="1" step="1" inputmode="numeric" placeholder="t.ex. 12"></div>
+        <div><label for="antal">Antal</label><input id="antal" type="number" min="1" step="1" inputmode="numeric" value="1"></div>
+        <div style="display:flex;align-items:end"><button class="primary" id="add" style="width:100%;white-space:nowrap">+ Lägg till</button></div>
+      </div>
+      <div class="actions"><button id="remove">− Ta bort</button></div>
+      <div class="msg" id="msg"></div>
+    </section>
+
+    <section class="card">
+      <h2>Räknare</h2>
+      <div class="totals" id="totals"></div>
+      <table>
+        <thead><tr><th>Typ</th><th>Storlek</th><th class="num">Antal</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+
+    <p class="small"><button id="logout">Logga ut</button></p>
+  </div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let typ = 'TPV';
+
+  function getKey() { try { return localStorage.getItem('apiKey') || ''; } catch { return ''; } }
+  function setKey(k) { try { k ? localStorage.setItem('apiKey', k) : localStorage.removeItem('apiKey'); } catch {} }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(path, {
+      ...opts,
+      headers: { 'content-type': 'application/json', 'x-api-key': getKey(), ...(opts.headers || {}) },
+    });
+    if (res.status === 401) { showLogin('Fel API-nyckel'); throw new Error('401'); }
+    const data = res.status === 204 ? null : await res.json();
+    if (!res.ok) throw new Error(data?.fel || `Fel ${res.status}`);
+    return data;
+  }
+
+  function showLogin(err = '') {
+    $('app').classList.add('hidden');
+    $('login').classList.remove('hidden');
+    $('loginMsg').textContent = err;
+  }
+
+  function showMsg(text, err = false) {
+    $('msg').textContent = text;
+    $('msg').className = 'msg' + (err ? ' err' : '');
+  }
+
+  async function load() {
+    const data = await api('/api/raknare');
+    $('login').classList.add('hidden');
+    $('app').classList.remove('hidden');
+
+    const totals = Object.entries(data.perTyp).map(([t, n]) => `<span class="pill">${t}: <b>${n}</b></span>`);
+    totals.push(`<span class="pill">Totalt: <b>${data.totalt}</b></span>`);
+    $('totals').innerHTML = totals.join('');
+
+    $('rows').innerHTML = data.raknare.length
+      ? data.raknare.map((r) => `<tr><td>${r.typ}</td><td>${r.storlek}</td><td class="num">${r.antal}</td>
+          <td style="text-align:right"><button class="danger" data-reset="${r.typ}/${r.storlek}">Nollställ</button></td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">Inga maskiner registrerade än</td></tr>';
+  }
+
+  async function change(path, verb) {
+    const storlek = $('storlek').value;
+    const antal = $('antal').value || 1;
+    if (!storlek) return showMsg('Ange en storlek', true);
+    try {
+      const r = await api(path, { method: 'POST', body: JSON.stringify({ typ, storlek: Number(storlek), antal: Number(antal) }) });
+      showMsg(`${verb} – ${r.typ} ${r.storlek}: ${r.antal} st`);
+      await load();
+    } catch (e) { if (e.message !== '401') showMsg(e.message, true); }
+  }
+
+  $('types').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-typ]');
+    if (!b) return;
+    typ = b.dataset.typ;
+    for (const x of $('types').children) x.classList.toggle('on', x === b);
+  });
+  $('add').onclick = () => change('/api/maskiner', 'Tillagd');
+  $('remove').onclick = () => change('/api/maskiner/ta-bort', 'Borttagen');
+  $('storlek').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('add').click(); });
+
+  $('rows').addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-reset]');
+    if (!b || !confirm(`Nollställ ${b.dataset.reset.replace('/', ' ')}?`)) return;
+    try { await api('/api/raknare/' + b.dataset.reset, { method: 'DELETE' }); await load(); }
+    catch (e) { if (e.message !== '401') showMsg(e.message, true); }
+  });
+
+  $('saveKey').onclick = () => { setKey($('key').value.trim()); load().catch(() => {}); };
+  $('key').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('saveKey').click(); });
+  $('logout').onclick = () => { setKey(''); showLogin(); };
+
+  load().catch((e) => { if (e.message !== '401') showLogin(e.message); });
+</script>
+</body>
+</html>
